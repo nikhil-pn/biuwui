@@ -30,7 +30,7 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
     uint8 public constant MAX_MEMBERS = 50;
     /// @notice Discount cap: 40% of the pot, as India's Chit Funds Act 1982 allows.
     uint16 public constant MAX_DISCOUNT_CAP_BPS = 4000;
-    /// @notice Organiser fee cap: 5% of the pot, as the same Act allows the foreman.
+    /// @notice Organiser fee cap: 5% of the pot (the Act's s.21(1)(b) foreman cap; a 2019 amendment allows 7%).
     uint16 public constant MAX_FEE_BPS = 500;
     /// @notice Display names are 1 to 32 bytes.
     uint256 public constant MAX_NAME_BYTES = 32;
