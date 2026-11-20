@@ -873,7 +873,7 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
     /// @notice What `m` can withdraw now.
     function withdrawable(address m) public view returns (uint256 amount) {
         amount = claimable[m];
-        if (phase == Phase.Completed || phase == Phase.Dissolved) amount += security[m];
+        if (phase == Phase.Completed) amount += security[m];
         amount += refundShare(m);
     }
 
@@ -885,7 +885,7 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
             claimable[member] = 0;
             totalClaimable -= amount;
         }
-        if (phase == Phase.Completed || phase == Phase.Dissolved) {
+        if (phase == Phase.Completed) {
             uint256 sec = security[member];
             if (sec != 0) {
                 security[member] = 0;
@@ -906,12 +906,14 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
     }
 
     /// @notice Dissolve a stalled circle. Anyone can call it once a round has stalled for the grace
-    /// period. What is left goes back in proportion to what each member put in minus took out.
+    /// period. Everything left except dividends already earned goes back in proportion to what each
+    /// member put in minus took out. Security held back from past winners joins that pool: it exists
+    /// to cover what winners still owe, so it goes to the members who have not been paid yet.
     function dissolve() external inPhase(Phase.Running) {
         if (!isStalled()) revert NotStalled();
         uint256 balance = token.balanceOf(address(this));
-        uint256 owed = totalClaimable + totalSecurity;
-        refundPool = balance > owed ? balance - owed : 0;
+        refundPool = balance > totalClaimable ? balance - totalClaimable : 0;
+        totalSecurity = 0;
         uint256 base;
         uint256 n = _members.length;
         for (uint256 i; i < n; ++i) {
