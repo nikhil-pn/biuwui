@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {Script, console} from "forge-std/Script.sol";
+import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
+import {BiuWuiFactory} from "../src/BiuWuiFactory.sol";
+
+/// @notice Deploys the circle implementation and the factory. On Aevum the token is the real tUSD8.
+/// Run (legacy transactions, as on QDay's own faucet):
+///   forge script script/Deploy.s.sol --rpc-url aevum --broadcast --legacy --account <keystore>
+contract Deploy is Script {
+    address internal constant TUSD8 = 0x456569838f1d43009A91ebA4263147Afd7233483;
+
+    function run() external returns (BiuWuiFactory factory, BiuWuiCircle implementation) {
+        address token = vm.envOr("TOKEN", TUSD8);
+        vm.startBroadcast();
+        implementation = new BiuWuiCircle();
+        factory = new BiuWuiFactory(token, address(implementation));
+        vm.stopBroadcast();
+        console.log("implementation", address(implementation));
+        console.log("factory", address(factory));
+        console.log("token", token);
+    }
+}
