@@ -318,3 +318,21 @@ textarea.field { height: auto; padding: 14px 16px; line-height: 1.5; resize: non
 .mv small { font-family: var(--font); margin: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [hidden] { display: none !important; }
 .ring-badge svg, .mark svg, .big-ok svg { display: block; }
+
+/* ---------------------------------------------------------------- top bar on narrow phones
+   A long circle name must not squeeze the round buttons: tighten the padding first, then only the name shrinks. */
+.topbar-in { gap: 4px; }
+.tb-left, .icon-btn, .avatar { flex-shrink: 0; }
+.pill { min-width: 0; }
+.pill svg { flex-shrink: 0; }
+#pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 420px) {
+  .tb-left { gap: 6px; }
+  .mode-seg button { padding: 0 10px; }
+  .pill { padding: 0 12px; gap: 6px; }
+}
+@media (max-width: 380px) {
+  .icon-btn, .avatar { width: 40px; height: 40px; }
+  .mode-seg button { padding: 0 8px; gap: 5px; }
+  .pill { padding: 0 10px; font-size: 14px; }
+}
