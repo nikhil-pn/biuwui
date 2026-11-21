@@ -80,6 +80,8 @@ const explorerTx = (h: string) => `${NET.explorer}/tx/${h}`;
 const txLink = (h: string, label = "View on explorer") => `<a href="${explorerTx(h)}" target="_blank" rel="noopener">${label} ↗</a>`;
 const nowSec = () => BigInt(Math.floor(Date.now() / 1000));
 const svg = (d: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const TICK = svg('<path d="M5 12.5 10 17l9-10"/>').replace('stroke-width="2"', 'stroke-width="3"');
+const CROSS = svg('<path d="M6 6l12 12M18 6 6 18"/>').replace('stroke-width="2"', 'stroke-width="3"');
 const MI = {
   how: ICON.open,
   shield: ICON.shield,
@@ -977,7 +979,7 @@ const actions: Record<string, () => void> = {
       rows: [["Goes to", winnerPayee()], ...(snap?.quote ? ([["Paid out now", usd(snap.quote.payout)], ["Held as security", usd(snap.quote.securityHeld)], ["Dividend to all", usd(snap.quote.dividend)]] as [string, string][]) : []), gasRow],
       cta: "Release it",
       run: async (p) => (await withStep(p, "The relayer releases the pot", () => A.submit(A.anyone(saved.current!, "release")), (r) => txLink(r.tx, "tx"))).tx,
-      done: (tx) => `<span class="big-ok">✓</span> Released to the locked payee. The discount is shared with every member.<br>${tx ? txLink(tx) : ""}`,
+      done: (tx) => `<span class="big-ok">${TICK}</span> Released to the locked payee. The discount is shared with every member.<br>${tx ? txLink(tx) : ""}`,
     }),
   payee: () => payeeFlow(),
   cancelPayee: () =>
@@ -1186,7 +1188,7 @@ function howSheet() {
 }
 
 function securityInto(sh: Sheet, back?: () => void) {
-  const row = (ok: boolean, t: string, d: string) => `<div class="who-row"><span class="mark ${ok ? "y" : "n"}">${ok ? "✓" : "✕"}</span><div><b>${t}</b><p>${d}</p></div></div>`;
+  const row = (ok: boolean, t: string, d: string) => `<div class="who-row"><span class="mark ${ok ? "y" : "n"}">${ok ? TICK : CROSS}</span><div><b>${t}</b><p>${d}</p></div></div>`;
   sh.show(`<div class="info"><h2>Who can move the pot?</h2><div class="who glass">
     ${row(false, "The organiser", "Opens the circle and earns a capped fee from discounts. No owner, no admin, no upgrade.")}
     ${row(false, "Our relayer", "Only submits your signatures and pays the gas. Change any detail and the signature fails.")}
@@ -1209,7 +1211,7 @@ function proofInto(sh: Sheet, back?: () => void) {
 
 function circlesSheet() {
   const sh = openSheet(`<div class="info"><h2>Your circles</h2>
-    ${saved.circles.length ? `<nav class="menu glass">${saved.circles.map((c, i) => `<button data-c="${c}"><span class="mi">${MI.circle}</span>Circle ${i + 1} <small>${short(c)}</small><i>${c === saved.current ? "✓" : "›"}</i></button>`).reverse().join("")}</nav>` : '<p class="lead">No circles yet.</p>'}
+    ${saved.circles.length ? `<nav class="menu glass">${saved.circles.map((c, i) => `<button data-c="${c}"><span class="mi">${MI.circle}</span>Circle ${i + 1} <small>${short(c)}</small><i>${c === saved.current ? TICK : "›"}</i></button>`).reverse().join("")}</nav>` : '<p class="lead">No circles yet.</p>'}
     <button class="btn-primary block" data-new>${DEMO ? "Start a new circle" : "Open a new circle"}</button></div>`);
   for (const b of sh.body.querySelectorAll<HTMLElement>("[data-c]"))
     b.addEventListener("click", () => {

@@ -203,9 +203,9 @@ body[data-screen="welcome"] .dock, body[data-screen="loading"] .dock { display: 
 .pdot { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; margin-top: -1px; font-size: 12px; color: #fff; }
 .pline.busy .pdot { border: 2.4px solid rgba(0, 0, 0, 0.12); border-top-color: var(--ink); animation: spin 0.8s linear infinite; }
 .pline.done .pdot { background: var(--green); }
-.pline.done .pdot::after { content: "✓"; }
+.pline.done .pdot::after { content: ""; width: 8px; height: 4px; margin-top: -2px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); }
 .pline.fail .pdot { background: #ef4444; }
-.pline.fail .pdot::after { content: "✕"; }
+.pline.fail .pdot::after { content: "\00D7"; font-size: 15px; line-height: 1; }
 .pnote { color: var(--muted); }
 .pnote a, .done-msg a { color: inherit; font-weight: 500; }
 .done-msg { padding: 14px 16px; border-radius: 20px; background: rgba(34, 197, 94, 0.1); color: #14532d; font-size: 15px; line-height: 1.55; }
@@ -317,3 +317,4 @@ textarea.field { height: auto; padding: 14px 16px; line-height: 1.5; resize: non
 .mv { display: grid; gap: 1px; min-width: 0; }
 .mv small { font-family: var(--font); margin: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [hidden] { display: none !important; }
+.ring-badge svg, .mark svg, .big-ok svg { display: block; }
