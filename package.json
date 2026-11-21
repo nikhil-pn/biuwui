@@ -1,0 +1,19 @@
+{
+  "name": "biuwui",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "abi": "node scripts/gen-abi.mjs",
+    "demo": "tsx scripts/demo-circle.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.58.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
