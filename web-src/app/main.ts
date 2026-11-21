@@ -328,7 +328,7 @@ function draw() {
   if (!w) return renderWelcome();
   if (document.body.dataset.screen === "welcome" || !document.querySelector(".home, .page-pane")) renderShell();
   const s = snap;
-  $("pill-name").textContent = saved.current ? (s?.info ? s.info.name : `Circle ${Math.max(1, saved.circles.indexOf(saved.current) + 1)}`) : "No circle yet";
+  $("pill-name").textContent = saved.current ? (s?.info ? s.info.name : `Circle ${Math.max(1, saved.circles.indexOf(saved.current) + 1)}`) : "No circle";
   if (!s) return;
 
   if (tab === "home") {
