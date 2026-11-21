@@ -41,12 +41,12 @@ function openVideo() {
   wrap.className = "video-root";
   wrap.innerHTML = `
     <div class="video-backdrop"></div>
-    <div class="video-box glass strong" role="dialog" aria-modal="true" aria-label="Biu Wui demo video">
+    <div class="video-box glass strong" role="dialog" aria-modal="true" aria-label="Sovereign demo video">
       <button class="video-x" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="video-frame">${
         id
-          ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Biu Wui demo" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`
-          : `<div class="video-soon"><span class="video-play"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span><p>The demo video is coming soon.</p><a class="btn-glass" href="https://app.biuwui.exprmnts.fun/?mode=demo">Try the demo in the app</a></div>`
+          ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Sovereign demo" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`
+          : `<div class="video-soon"><span class="video-play"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span><p>The demo video is coming soon.</p><a class="btn-glass" href="https://app.sovereign.exprmnts.fun/?mode=demo">Try the demo in the app</a></div>`
       }</div>
     </div>`;
   document.body.append(wrap);

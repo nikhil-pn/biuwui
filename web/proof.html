@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Biu Wui proof · for the judges</title>
-  <meta name="description" content="Where to check each Biu Wui claim: verified contracts on Aevum, a full gasless circle, tests and the relayer's rails.">
+  <title>Sovereign proof · for the judges</title>
+  <meta name="description" content="Where to check each Sovereign claim: verified contracts on Aevum, a full gasless circle, tests and the relayer's rails.">
   <meta name="theme-color" content="#eeeeef">
-  <meta property="og:title" content="Biu Wui proof · for the judges">
-  <meta property="og:description" content="Where to check each Biu Wui claim: verified contracts on Aevum, a full gasless circle, tests and the relayer's rails.">
-  <meta property="og:image" content="https://biuwui.exprmnts.fun/og.png">
+  <meta property="og:title" content="Sovereign proof · for the judges">
+  <meta property="og:description" content="Where to check each Sovereign claim: verified contracts on Aevum, a full gasless circle, tests and the relayer's rails.">
+  <meta property="og:image" content="https://sovereign.exprmnts.fun/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>
@@ -21,14 +21,14 @@
   <div class="ambient" aria-hidden="true"></div>
   <header class="nav-wrap">
     <nav class="nav glass sheen" aria-label="Main">
-      <a class="brand" href="/"><span class="cjk" aria-hidden="true">標會</span>Biu Wui</a>
+      <a class="brand" href="/"><span class="mark" aria-hidden="true"><svg class="crown" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5l4.6 3.8L12 5l4.4 7.3L21 8.5l-1.9 9.5H4.9L3 8.5Z" fill="currentColor"/><rect x="4.9" y="19.2" width="14.2" height="1.8" rx=".9" fill="currentColor"/></svg></span>Sovereign</a>
       <div class="nav-links">
         <a href="/how">How it works</a>
         <a href="/live">Live</a>
         <a href="/security">Security</a>
         <a href="/proof" aria-current="page">Proof</a>
       </div>
-      <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+      <a class="btn-primary" href="https://app.sovereign.exprmnts.fun/?mode=live">Start saving</a>
       <button class="nav-menu" aria-label="Menu" aria-expanded="false" aria-controls="nav-sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
     </nav>
     <div class="nav-sheet glass strong" id="nav-sheet" hidden>
@@ -36,7 +36,7 @@
       <a href="/live">Live</a>
       <a href="/security">Security</a>
       <a href="/proof" aria-current="page">Proof</a>
-      <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+      <a class="btn-primary" href="https://app.sovereign.exprmnts.fun/?mode=live">Start saving</a>
     </div>
   </header>
   <main class="page">
@@ -47,19 +47,18 @@
     </header>
     <section class="block" id="proof">
         <div class="proof">
-          <div class="proof-row"><h3>Factory (gasless open)</h3><p>Opens circles as EIP-1167 clones. <code>createCircleWithSig</code> lets an organiser open a circle with one signature. Verified.</p><a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">0xDD39…39EA ↗</a></div>
-          <div class="proof-row"><h3>First factory</h3><p>The first version, without the gasless open. Its circle is the full run below. Verified.</p><a href="https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89" target="_blank" rel="noopener">0xAEcA…aa89 ↗</a></div>
-          <div class="proof-row"><h3>Circle implementation</h3><p>Pledges, rounds, the auction, the payee lock, standing orders, release and dissolve. No owner, no admin, no upgrade. Verified.</p><a href="https://explorer-test.qday.info/address/0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf" target="_blank" rel="noopener">0x1F8E…bBDf ↗</a></div>
+          <div class="proof-row"><h3>Factory</h3><p>Opens circles as EIP-1167 clones. <code>createCircleWithSig</code> lets an organiser open a circle with one signature. Verified.</p><a href="https://explorer-test.qday.info/address/0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87" target="_blank" rel="noopener">0x7311…1f87 ↗</a></div>
+          <div class="proof-row"><h3>Circle implementation</h3><p>Pledges, rounds, the auction, the payee lock, standing orders, release and dissolve. No owner, no admin, no upgrade. Verified.</p><a href="https://explorer-test.qday.info/address/0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed" target="_blank" rel="noopener">0x918c…fDed ↗</a></div>
           <div class="proof-row"><h3>tUSD8</h3><p>QDay's test dollar (6 decimals), with EIP-3009 and EIP-2612, so members can pay by signature.</p><a href="https://explorer-test.qday.info/address/0x456569838f1d43009A91ebA4263147Afd7233483" target="_blank" rel="noopener">0x4565…3483 ↗</a></div>
-          <div class="proof-row"><h3>Foundry tests</h3><p>52 unit, fuzz, invariant and fork tests, including a whole gasless circle against the real tUSD8 on a fork of Aevum.</p><a href="https://github.com/nikhil-pn/biuwui/tree/main/test" target="_blank" rel="noopener">test/ ↗</a></div>
-          <div class="proof-row"><h3>Gasless relayer</h3><p>An allow-list of functions, simulate before sending, signatures valid for under an hour, rate limits and a gas cap.</p><a href="https://github.com/nikhil-pn/biuwui/blob/main/docs/API.md" target="_blank" rel="noopener">API.md ↗</a></div>
-          <div class="proof-row"><h3>The rules</h3><p>Pledges, rounds, standing orders, the payee lock and what happens when things go wrong, in plain words.</p><a href="https://github.com/nikhil-pn/biuwui/blob/main/docs/RULES.md" target="_blank" rel="noopener">RULES.md ↗</a></div>
+          <div class="proof-row"><h3>Foundry tests</h3><p>48 unit, fuzz and invariant tests plus a fork test, including a whole gasless circle against the real tUSD8 on a fork of Aevum.</p><a href="https://github.com/nikhil-pn/sovereign/tree/main/test" target="_blank" rel="noopener">test/ ↗</a></div>
+          <div class="proof-row"><h3>Gasless relayer</h3><p>An allow-list of functions, simulate before sending, signatures valid for under an hour, rate limits and a gas cap.</p><a href="https://github.com/nikhil-pn/sovereign/blob/main/docs/API.md" target="_blank" rel="noopener">API.md ↗</a></div>
+          <div class="proof-row"><h3>The rules</h3><p>Pledges, rounds, standing orders, the payee lock and what happens when things go wrong, in plain words.</p><a href="https://github.com/nikhil-pn/sovereign/blob/main/docs/RULES.md" target="_blank" rel="noopener">RULES.md ↗</a></div>
         </div>
       </section>
     <section class="block">
         <div class="feed-card">
           <header class="feed-head">
-            <span>A whole circle, 32 transactions · <span id="proof-circle">loading…</span></span>
+            <span>A whole circle, 29 transactions · <span id="proof-circle">loading…</span></span>
             <span class="feed-timer">members paid 0 gas</span>
           </header>
           <ul class="feed" id="proof-steps"><li class="empty">Loading the transactions…</li></ul>
@@ -67,11 +66,11 @@
       </section>
       <section class="cta-band glass sheen">
         <div><h2>Start your first savings circle</h2><p>Make a wallet or connect yours, choose the share and how often, and invite your friends. Every step runs on the QDay Aevum testnet, and you never need gas.</p></div>
-        <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+        <a class="btn-primary" href="https://app.sovereign.exprmnts.fun/?mode=live">Start saving</a>
       </section>
       <footer class="foot">
-        <p>Biu Wui · built for QDay's <i>Aevum Builder Challenge</i> by Nikhil and Hina · MIT license</p>
-        <p><a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a> · <a href="https://app.biuwui.exprmnts.fun/" target="_blank" rel="noopener">The app</a> · <a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">Factory on the explorer</a></p>
+        <p>Sovereign · built for QDay's <i>Aevum Builder Challenge</i> by Nikhil and Hina · MIT license</p>
+        <p><a href="https://github.com/nikhil-pn/sovereign" target="_blank" rel="noopener">GitHub</a> · <a href="https://app.sovereign.exprmnts.fun/" target="_blank" rel="noopener">The app</a> · <a href="https://explorer-test.qday.info/address/0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87" target="_blank" rel="noopener">Factory on the explorer</a></p>
         <p class="fine">Testnet only. tUSD8 is QDay's test dollar and has no value.</p>
       </footer>
   </main>

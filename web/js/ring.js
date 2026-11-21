@@ -77,7 +77,7 @@ export function createRing(el) {
 const DEMO = ["Ah Ming", "Kitty", "Wing"];
 const STEPS = [
   { t: "Pay", caption: "Everyone pays their $10 share into the pot by signing. Only the contract holds it, and nobody pays gas." },
-  { t: "Bid", caption: "Whoever needs the money now bids a discount. The biggest discount wins, like a real 標會 auction." },
+  { t: "Bid", caption: "Whoever needs the money now bids a discount. The biggest discount wins, like a real savings-circle auction." },
   { t: "Close", caption: "When bidding ends, anyone closes the auction. Kitty wins at a $3 discount, and her payee is locked." },
   { t: "Approve", caption: "A quorum of members signs to approve the release. They see exactly which payee gets the pot." },
   { t: "Release", caption: "Anyone releases it. The pot goes only to Kitty's locked payee, and the $3 discount is shared with everyone." },

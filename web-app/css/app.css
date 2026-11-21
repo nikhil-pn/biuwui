@@ -1,4 +1,4 @@
-/* Biu Wui app: one screen, glass all the way down. Phone first; on desktop the same app spreads into two columns. */
+/* Sovereign app: one screen, glass all the way down. Phone first; on desktop the same app spreads into two columns. */
 html, body { height: 100%; }
 body {
   overscroll-behavior-y: none;

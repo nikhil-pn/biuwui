@@ -13,7 +13,7 @@ export const NET = {
   /** The current factory (gasless open). New circles open here. */
   factory: FACTORY,
   /** The first factory; its circle stays on chain. */
-  factoryV1: deployment.factoryV1.address as Address,
+  factoryV1: ((deployment as { factoryV1?: { address: string } }).factoryV1?.address ?? deployment.factory) as Address,
   implementation: deployment.implementation as Address,
   token: TUSD8,
   decimals: 6,

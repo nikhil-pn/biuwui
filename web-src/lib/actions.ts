@@ -113,8 +113,8 @@ export async function memberState(c: Address, members: Address[], round: bigint)
   });
 }
 
-/** True only for circles a Biu Wui factory opened, so an invite link can't point at some other contract. */
-export async function isBiuWuiCircle(c: string): Promise<boolean> {
+/** True only for circles a Sovereign factory opened, so an invite link can't point at some other contract. */
+export async function isSovereignCircle(c: string): Promise<boolean> {
   if (!/^0x[0-9a-fA-F]{40}$/.test(c)) return false;
   const res = await pub.multicall({
     contracts: [NET.factory, NET.factoryV1].map((f) => ({ address: f, abi: factoryAbi as Abi, functionName: "isCircle", args: [c] })),
@@ -233,7 +233,7 @@ export async function signOpen(w: Wallet, p: OpenParams): Promise<Call> {
   const deadline = nowSec() + WINDOW;
   const nonce = (await pub.readContract({ address: NET.factory, abi: factoryAbi as Abi, functionName: "nonces", args: [w.address] })) as bigint;
   const sig = await w.sign({
-    domain: { name: "Biu Wui Factory", version: "1", chainId: NET.chainId, verifyingContract: NET.factory },
+    domain: { name: "Sovereign Factory", version: "1", chainId: NET.chainId, verifyingContract: NET.factory },
     types: OPEN_TYPES,
     primaryType: "OpenCircle",
     message: { organiser: w.address, ...p, nonce, deadline },

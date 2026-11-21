@@ -1,5 +1,5 @@
-// Biu Wui app shell: cached so the app opens instantly and offline. Chain data always comes from the network.
-const CACHE = "biuwui-shell-v1";
+// Sovereign app shell: cached so the app opens instantly and offline. Chain data always comes from the network.
+const CACHE = "sovereign-shell-v1";
 const SHELL = ["/", "/css/base.css", "/css/glass.css", "/css/wallet.css", "/css/ring.css", "/css/app.css", "/js/app.js",
   "/fonts/inter-400.woff2", "/fonts/inter-500.woff2", "/fonts/inter-600.woff2", "/fonts/inter-700.woff2", "/favicon.svg", "/manifest.webmanifest"];
 

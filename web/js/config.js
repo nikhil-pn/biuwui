@@ -1,21 +1,21 @@
-// Where Biu Wui lives on the QDay Aevum testnet (from deployments/aevum.json).
+// Where Sovereign lives on the QDay Aevum testnet (from deployments/aevum.json).
 export const CONFIG = {
   rpc: "https://rpc-test.qday.info",
   explorer: "https://explorer-test.qday.info",
   chainId: 44005,
   /** The current factory (gasless open). New circles open here. */
-  factory: "0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA",
-  /** The first factory. Its circles stay on chain, so the site reads both. */
-  factoryV1: "0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89",
-  implementation: "0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf",
-  /** The first block either factory could have logs in. */
-  firstBlock: 3737723,
+  factory: "0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87",
+  /** Kept for code that reads two factories; there is one factory now. */
+  factoryV1: "0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87",
+  implementation: "0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed",
+  /** The block the factory was deployed in. */
+  firstBlock: 3754362,
   /** tUSD8, QDay's test dollar (6 decimals). */
   token: "0x456569838f1d43009A91ebA4263147Afd7233483",
   decimals: 6,
-  app: "https://app.biuwui.exprmnts.fun",
-  site: "https://biuwui.exprmnts.fun",
-  github: "https://github.com/nikhil-pn/biuwui",
+  app: "https://app.sovereign.exprmnts.fun",
+  site: "https://sovereign.exprmnts.fun",
+  github: "https://github.com/nikhil-pn/sovereign",
 };
 
 // The friendly members the secretary bot plays, and our service accounts. Throwaway testnet accounts.

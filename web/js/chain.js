@@ -1,4 +1,4 @@
-// A tiny read-only JSON-RPC client with just enough ABI decoding for Biu Wui's views.
+// A tiny read-only JSON-RPC client with just enough ABI decoding for Sovereign's views.
 // Calls made in the same tick go out as one JSON-RPC batch (Aevum answers batches, and allows browsers).
 import { CONFIG } from "./config.js";
 
@@ -72,13 +72,9 @@ function decodeAddressArray(hex) {
   return Array.from({ length: len }, (_, i) => addr(word(hex, off + 1 + i)));
 }
 
-/** Every circle from both factories, oldest first. */
+/** Every circle the factory opened, oldest first. */
 export async function circles() {
-  const [v1, v2] = await Promise.all([
-    call(CONFIG.factoryV1, SEL.circles).then(decodeAddressArray),
-    call(CONFIG.factory, SEL.circles).then(decodeAddressArray),
-  ]);
-  return [...v1, ...v2];
+  return call(CONFIG.factory, SEL.circles).then(decodeAddressArray);
 }
 
 export async function circleInfo(c) {

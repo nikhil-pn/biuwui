@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "redirects": [
-    { "source": "/app", "destination": "https://app.biuwui.exprmnts.fun/", "permanent": false },
-    { "source": "/app.html", "destination": "https://app.biuwui.exprmnts.fun/", "permanent": false },
-    { "source": "/try", "destination": "https://app.biuwui.exprmnts.fun/?mode=demo", "permanent": false }
+    { "source": "/app", "destination": "https://app.sovereign.exprmnts.fun/", "permanent": false },
+    { "source": "/app.html", "destination": "https://app.sovereign.exprmnts.fun/", "permanent": false },
+    { "source": "/try", "destination": "https://app.sovereign.exprmnts.fun/?mode=demo", "permanent": false }
   ]
 }

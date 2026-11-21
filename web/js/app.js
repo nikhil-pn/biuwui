@@ -123,7 +123,7 @@ async function loadCircles() {
   renderChips();
 }
 
-const every = (ms, fn) => setInterval(() => fn().catch((e) => console.error("Biu Wui:", e)), ms);
+const every = (ms, fn) => setInterval(() => fn().catch((e) => console.error("Sovereign:", e)), ms);
 
 async function start() {
   if (has("flow-ring")) {
@@ -141,7 +141,7 @@ async function start() {
     await refreshPhone();
     await refreshStory();
   } catch (e) {
-    console.error("Biu Wui: could not read the testnet", e);
+    console.error("Sovereign: could not read the testnet", e);
     $("device-note").textContent = "Could not reach the QDay Aevum testnet. Retrying…";
   }
   every(15000, refreshPhone);

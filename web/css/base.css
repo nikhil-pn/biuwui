@@ -1,4 +1,4 @@
-/* Biu Wui: base tokens. Clean, light, "safe money" look. */
+/* Sovereign: base tokens. Clean, light, "safe money" look. */
 @font-face { font-family: "Inter"; src: url("../fonts/inter-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Inter"; src: url("../fonts/inter-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Inter"; src: url("../fonts/inter-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
@@ -40,8 +40,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .num .dec { color: var(--faint); }
 
-/* The 標會 mark: CJK in the system's own sans (PingFang on Apple, Noto Sans CJK elsewhere). */
+/* The Sovereign mark: a gold crown on an ink badge. */
 .cjk { font-family: "PingFang HK", "PingFang TC", "Hiragino Sans", "Noto Sans CJK TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; font-weight: 700; letter-spacing: 0; line-height: 1; }
-.brand .cjk { font-size: 15px; padding: 5px 6px; border-radius: 8px; background: var(--ink); color: #e8c3a2; }
-.icon-btn .cjk { font-size: 12px; color: var(--ink); }
+.brand .mark { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: #e8c3a2; }
+.icon-btn .mark { display: inline-grid; place-items: center; color: var(--ink); }
 a.icon-btn { text-decoration: none; }

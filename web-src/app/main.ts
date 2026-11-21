@@ -1,5 +1,5 @@
 /**
- * Biu Wui, the app. A visitor makes a test wallet (or connects theirs), opens or joins a circle, and plays it
+ * Sovereign, the app. A visitor makes a test wallet (or connects theirs), opens or joins a circle, and plays it
  * round by round. Members only sign; the relayer pays every gas fee. The chain is the only state.
  */
 import type { Address, Hex } from "viem";
@@ -11,7 +11,7 @@ import { ICON, renderFeed, usd } from "../../web/js/feed.js";
 import { createRing, mountFlowDemo } from "../../web/js/ring.js";
 import { esc, friendly, openSheet, progressIn, toast, type Sheet } from "./ui.ts";
 
-const SITE = "https://biuwui.exprmnts.fun";
+const SITE = "https://sovereign.exprmnts.fun";
 const ZERO = "0x0000000000000000000000000000000000000000";
 const PHASES = ["Filling up", "Running", "Complete", "Dissolved", "Did not fill"];
 
@@ -20,13 +20,13 @@ const PHASES = ["Filling up", "Running", "Complete", "Dissolved", "Did not fill"
 type Mode = "live" | "demo";
 const params = new URLSearchParams(location.search);
 const joinParam = params.get("join");
-const MODE: Mode = joinParam ? "live" : ((params.get("mode") as Mode | null) ?? (localStorage.getItem("biuwui.mode") as Mode | null) ?? "live") === "demo" ? "demo" : "live";
-localStorage.setItem("biuwui.mode", MODE);
+const MODE: Mode = joinParam ? "live" : ((params.get("mode") as Mode | null) ?? (localStorage.getItem("sovereign.mode") as Mode | null) ?? "live") === "demo" ? "demo" : "live";
+localStorage.setItem("sovereign.mode", MODE);
 const DEMO = MODE === "demo";
 document.body.classList.add(DEMO ? "mode-demo" : "mode-live");
 
 function switchMode(to: Mode) {
-  localStorage.setItem("biuwui.mode", to);
+  localStorage.setItem("sovereign.mode", to);
   location.href = location.pathname;
 }
 
@@ -41,7 +41,7 @@ interface Saved {
   circles: Address[];
   current?: Address;
 }
-const KEY = DEMO ? "biuwui.demo.v1" : "biuwui.live.v1";
+const KEY = DEMO ? "sovereign.demo.v1" : "sovereign.live.v1";
 const saved: Saved = { circles: [], ...(JSON.parse(localStorage.getItem(KEY) ?? "null") ?? {}) };
 const save = () => localStorage.setItem(KEY, JSON.stringify(saved));
 
@@ -186,7 +186,7 @@ function nextStep(s: Snap): Next {
   const share = s.info?.share ?? 10000n;
   const timer = (end: bigint | number) => `<span class="timer" data-end="${end}"></span>`;
   if (!ready(s))
-    return { key: "setup", kicker: "Almost there", title: "Get free test money", body: "Biu Wui sends your wallet 0.03 test dollars, enough for a practice circle. You never need gas.", actions: `<button class="btn-primary" data-act="setup">Get test money</button>` };
+    return { key: "setup", kicker: "Almost there", title: "Get free test money", body: "Sovereign sends your wallet 0.03 test dollars, enough for a practice circle. You never need gas.", actions: `<button class="btn-primary" data-act="setup">Get test money</button>` };
   if (!s.circle || (s.phase >= 2 && s.owed === 0n))
     return DEMO
       ? { key: `start:${s.circle ?? ""}:${s.phase}`, kicker: s.phase >= 2 ? "Circle complete" : "Get started", title: s.phase >= 2 ? "Start another practice circle" : "Start a practice circle", body: "You and two friends, Ah Ming and Kitty (they're bots), each put in $0.01 a round for 3 two-minute rounds. Bid for the pot, or wait your turn.", actions: `<button class="btn-primary" data-act="start">Start a circle</button>` }
@@ -252,13 +252,13 @@ let ring: ReturnType<typeof createRing> | null = null;
 let nextKey = "";
 
 const WALLET_ART = (kind: string, id = "") =>
-  `<div class="wallet"><div class="wcard silver"></div><div class="wcard gold"><span class="brand">Biu Wui</span><span class="kind"${id ? ` id="${id}"` : ""}>${kind}</span></div><div class="pocket"><span class="stitch"></span><span class="clasp"></span></div></div>`;
+  `<div class="wallet"><div class="wcard silver"></div><div class="wcard gold"><span class="brand">Sovereign</span><span class="kind"${id ? ` id="${id}"` : ""}>${kind}</span></div><div class="pocket"><span class="stitch"></span><span class="clasp"></span></div></div>`;
 
 function renderWelcome() {
   document.body.dataset.screen = "welcome";
   $("screen").innerHTML = `
     <section class="welcome">
-      <div class="wallet-art" aria-hidden="true">${WALLET_ART("標會")}</div>
+      <div class="wallet-art" aria-hidden="true">${WALLET_ART("Circle")}</div>
       <p class="mode-tag ${DEMO ? "demo" : "live"}">${DEMO ? "Demo mode · bots and free test money" : "Live · QDay Aevum testnet"}</p>
       <h1>Save together.<br>Bid for the pot.</h1>
       <ul class="points">
@@ -273,7 +273,7 @@ function renderWelcome() {
       <button class="btn-primary block" data-act="create">${DEMO ? "Create my wallet" : "Make a test wallet"}</button>
       ${DEMO || !hasInjected() ? "" : '<button class="btn-glass block" data-act="connect">Connect my wallet</button>'}
       <button class="btn-glass block" data-act="how">How it works</button>
-      <p class="fine">${DEMO ? "Biu Wui hands you free test money and two bots play with you. Nothing real is at stake." : `A test wallet lives in this browser. You can also connect MetaMask or Rabby; it adds the Aevum network for you. Just looking? <button class="link inline" data-act="to-demo">Try demo mode</button>`}</p>
+      <p class="fine">${DEMO ? "Sovereign hands you free test money and two bots play with you. Nothing real is at stake." : `A test wallet lives in this browser. You can also connect MetaMask or Rabby; it adds the Aevum network for you. Just looking? <button class="link inline" data-act="to-demo">Try demo mode</button>`}</p>
     </section>`;
 }
 
@@ -288,7 +288,7 @@ function renderShell() {
           <p class="label">Your test dollars</p>
           <div class="bal-row"><p class="num big" id="h-bal">$0<span class="dec">.00</span></p><span class="chip glass" id="h-gas">No gas needed</span></div>
         </div>
-        <div class="wallet-art" style="grid-area:wallet" aria-hidden="true">${WALLET_ART("標會", "h-kind")}</div>
+        <div class="wallet-art" style="grid-area:wallet" aria-hidden="true">${WALLET_ART("Circle", "h-kind")}</div>
         <article class="mini glass" style="grid-area:moves" id="h-moves" hidden>
           <header><h2>Your moves</h2></header>
           <nav class="menu" id="h-menu"></nav>
@@ -334,7 +334,7 @@ function draw() {
   if (tab === "home") {
     $("h-bal").innerHTML = money(s.bal);
     $("h-gas").textContent = w.kind === "burner" ? "No gas needed" : "No gas needed · your wallet";
-    $("h-kind").textContent = PHASES[s.phase] ?? "標會";
+    $("h-kind").textContent = PHASES[s.phase] ?? "Circle";
     const n = nextStep(s);
     if (n.key !== nextKey) {
       nextKey = n.key;
@@ -536,7 +536,7 @@ function setupFlow() {
     <div class="tx">
       <p class="kicker">Your wallet</p>
       <h2>Set up your wallet</h2>
-      <p class="lead">Biu Wui makes a test wallet in this browser. It only ever signs; our relayer sends every transaction and pays the gas, so you never need a gas token.</p>
+      <p class="lead">Sovereign makes a test wallet in this browser. It only ever signs; our relayer sends every transaction and pays the gas, so you never need a gas token.</p>
       <div class="tx-progress"></div>
       <div class="tx-actions"><button class="btn-primary block" data-go>${w ? "Continue" : "Create my wallet"}</button></div>
     </div>`);
@@ -614,8 +614,8 @@ function inviteSheet() {
         <button class="btn-glass block" data-copy>Copy link</button>
       </div>
     </div>`);
-  const text = `Join my savings circle "${info.name}" on Biu Wui: ${usd(info.share)} a round, ${info.size} members. Bid for the pot; nobody can run off with it.`;
-  sh.body.querySelector("[data-share]")?.addEventListener("click", () => void navigator.share?.({ title: "Biu Wui", text, url }).catch(() => {}));
+  const text = `Join my savings circle "${info.name}" on Sovereign: ${usd(info.share)} a round, ${info.size} members. Bid for the pot; nobody can run off with it.`;
+  sh.body.querySelector("[data-share]")?.addEventListener("click", () => void navigator.share?.({ title: "Sovereign", text, url }).catch(() => {}));
   sh.body.querySelector("[data-copy]")!.addEventListener("click", async () => {
     await navigator.clipboard?.writeText(url);
     toast("Invite link copied", "ok", 1800);
@@ -639,10 +639,10 @@ const checkPayee = (body: HTMLElement) => {
 /** Join a circle (from an invite link or the home screen): a signed pledge of one share. */
 async function joinFlow(c: string) {
   pendingJoin = c;
-  if (!(await A.isBiuWuiCircle(c).catch(() => false))) {
+  if (!(await A.isSovereignCircle(c).catch(() => false))) {
     pendingJoin = null;
     history.replaceState(null, "", location.pathname);
-    return toast("That invite link doesn't point to a Biu Wui circle.", "err", 6000);
+    return toast("That invite link doesn't point to a Sovereign circle.", "err", 6000);
   }
   if (!w) {
     toast("First make a test wallet or connect yours, then you'll join the circle.", "info", 5000);
@@ -1099,10 +1099,10 @@ function profileSheet() {
           ${DEMO ? `<button data-p="to-live"><span class="mi">${MI.live}</span>Switch to live mode<i>›</i></button>` : `<button data-p="to-demo"><span class="mi">${MI.demo}</span>Switch to demo mode<i>›</i></button>`}
           <button data-p="proof"><span class="mi">${MI.ok}</span>Proof on chain<i>›</i></button>
           <a href="${SITE}/live" target="_blank" rel="noopener"><span class="mi">${MI.live}</span>Watch circles live<i>↗</i></a>
-          <button data-p="install"><span class="mi">${MI.down}</span>Add Biu Wui to your home screen<i>›</i></button>
+          <button data-p="install"><span class="mi">${MI.down}</span>Add Sovereign to your home screen<i>›</i></button>
         </nav>
         ${w ? `<button class="danger" data-p="reset">${w.kind === "injected" ? "Disconnect this wallet" : "Reset this test wallet"}</button>` : ""}
-        <p class="fine center">Biu Wui · QDay Aevum testnet · <a href="${SITE}" target="_blank" rel="noopener">biuwui.exprmnts.fun</a></p>
+        <p class="fine center">Sovereign · QDay Aevum testnet · <a href="${SITE}" target="_blank" rel="noopener">sovereign.exprmnts.fun</a></p>
       </div>`);
     sh.body.querySelector("[data-copy]")?.addEventListener("click", async (e) => {
       await navigator.clipboard?.writeText((e.currentTarget as HTMLElement).dataset.copy!);
@@ -1115,14 +1115,14 @@ function profileSheet() {
     if (p === "security") return securityInto(sh, home);
     if (p === "proof") return proofInto(sh, home);
     if (p === "keys") {
-      sh.show(`<div class="info"><h2>Your wallet</h2><p class="lead">${w?.kind === "injected" ? "Your browser wallet holds the key. Biu Wui only asks it to sign readable EIP-712 messages; it never asks it to send a transaction." : "The key lives in this browser only. Clearing site data deletes it. It's a test wallet: never use it for anything real."}</p>
+      sh.show(`<div class="info"><h2>Your wallet</h2><p class="lead">${w?.kind === "injected" ? "Your browser wallet holds the key. Sovereign only asks it to sign readable EIP-712 messages; it never asks it to send a transaction." : "The key lives in this browser only. Clearing site data deletes it. It's a test wallet: never use it for anything real."}</p>
         <dl class="rows stack glass"><div><dt>What you sign</dt><dd>EIP-3009 payments for exactly one share, EIP-712 bids, approvals and payee changes, and EIP-2612 permits for standing orders</dd></div><div><dt>Who sends it</dt><dd>Our relayer, which pays the gas and can't change any detail you signed</dd></div><div><dt>Network</dt><dd>QDay Aevum testnet · chain 44005</dd></div><div><dt>Address</dt><dd><code>${w ? esc(w.address) : "–"}</code></dd></div></dl>
         <p class="fine">Testnet only. tUSD8 is QDay's test dollar and has no value.</p></div>`, home);
       return;
     }
     if (p === "to-live" || p === "to-demo") return switchMode(p === "to-live" ? "live" : "demo");
     if (p === "fund" && w) {
-      sh.show(`<div class="info"><h2>Add test money</h2><p class="lead">Get 0.03 test dollars from Biu Wui's starter faucet (once per wallet), or ask a friend to send tUSD8 to this address on the Aevum testnet. You never need a gas token.</p>
+      sh.show(`<div class="info"><h2>Add test money</h2><p class="lead">Get 0.03 test dollars from Sovereign's starter faucet (once per wallet), or ask a friend to send tUSD8 to this address on the Aevum testnet. You never need a gas token.</p>
         <div class="addr-box glass"><span class="kicker">Your Aevum address</span><code>${w.address}</code><button class="btn-glass" data-copy="${w.address}">Copy address</button></div>
         <div class="tx-progress"></div><button class="btn-primary block" data-faucet>Get $0.03 of test money</button></div>`, home);
       sh.body.querySelector("[data-copy]")?.addEventListener("click", async (e) => {
@@ -1153,13 +1153,13 @@ function profileSheet() {
     }
     if (p === "install") {
       const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      sh.show(`<div class="info"><h2>Add Biu Wui to your home screen</h2>${installEvt ? `<p class="lead">Install Biu Wui as an app. It opens full screen, like any other app.</p><button class="btn-primary block" data-install>Install Biu Wui</button>` : ios ? `<p class="lead">In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>` : `<p class="lead">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>`}</div>`, home);
+      sh.show(`<div class="info"><h2>Add Sovereign to your home screen</h2>${installEvt ? `<p class="lead">Install Sovereign as an app. It opens full screen, like any other app.</p><button class="btn-primary block" data-install>Install Sovereign</button>` : ios ? `<p class="lead">In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>` : `<p class="lead">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>`}</div>`, home);
       sh.body.querySelector("[data-install]")?.addEventListener("click", () => void installEvt?.prompt());
       return;
     }
     if (p === "reset") {
       const inj = w?.kind === "injected";
-      sh.show(`<div class="info"><h2>${inj ? "Disconnect this wallet?" : "Reset this test wallet?"}</h2><p class="lead">${inj ? "Biu Wui forgets your wallet on this device. Your circles stay on chain; connect again to see them." : "The key on this device is deleted and you start over with a fresh wallet. Your old circles and test money stay on chain, but you won't be able to use them."}</p><button class="btn-primary block danger-btn" data-yes>${inj ? "Disconnect" : "Reset"}</button></div>`, home);
+      sh.show(`<div class="info"><h2>${inj ? "Disconnect this wallet?" : "Reset this test wallet?"}</h2><p class="lead">${inj ? "Sovereign forgets your wallet on this device. Your circles stay on chain; connect again to see them." : "The key on this device is deleted and you start over with a fresh wallet. Your old circles and test money stay on chain, but you won't be able to use them."}</p><button class="btn-primary block danger-btn" data-yes>${inj ? "Disconnect" : "Reset"}</button></div>`, home);
       sh.body.querySelector("[data-yes]")!.addEventListener("click", () => {
         localStorage.removeItem(KEY);
         location.reload();
@@ -1203,9 +1203,9 @@ function proofInto(sh: Sheet, back?: () => void) {
     <div><dt>Factory</dt><dd>${a(`${NET.explorer}/address/${NET.factory}`, short(NET.factory))}</dd></div>
     <div><dt>Circle code</dt><dd>${a(`${NET.explorer}/address/${NET.implementation}`, short(NET.implementation))}</dd></div>
     ${saved.current ? `<div><dt>Your circle</dt><dd>${a(`${NET.explorer}/address/${saved.current}`, short(saved.current))}</dd></div>` : ""}
-    <div><dt>Tests</dt><dd>${a("https://github.com/nikhil-pn/biuwui/tree/main/test", "52 Foundry tests")}</dd></div>
-    <div><dt>Live circles</dt><dd>${a(`${SITE}/live`, "biuwui.exprmnts.fun/live")}</dd></div>
-    <div><dt>Every claim</dt><dd>${a(`${SITE}/proof`, "biuwui.exprmnts.fun/proof")}</dd></div>
+    <div><dt>Tests</dt><dd>${a("https://github.com/nikhil-pn/sovereign/tree/main/test", "52 Foundry tests")}</dd></div>
+    <div><dt>Live circles</dt><dd>${a(`${SITE}/live`, "sovereign.exprmnts.fun/live")}</dd></div>
+    <div><dt>Every claim</dt><dd>${a(`${SITE}/proof`, "sovereign.exprmnts.fun/proof")}</dd></div>
     </dl></div>`, back);
 }
 
@@ -1277,7 +1277,7 @@ async function refresh(): Promise<void> {
         snap = s;
         draw();
       } catch (e) {
-        console.error("Biu Wui:", e);
+        console.error("Sovereign:", e);
       }
     } while (again);
   })();
