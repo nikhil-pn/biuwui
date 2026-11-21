@@ -89,7 +89,8 @@ body { min-height: 100svh; }
 .cta-band p { color: #48484c; margin-top: 8px; font-size: 16px; }
 
 @media (max-width: 900px) {
-  .page { padding: 8px 16px 64px; }
+  /* The phone's glow reaches past the screen edge; clip it so the page never pans sideways. */
+  .page { padding: 8px 16px 64px; overflow-x: clip; }
   .home-hero { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-top: 16px; }
   .home-hero .device { margin-top: 36px; }
   .device .phone { width: min(390px, 100%); }
