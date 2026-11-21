@@ -12,7 +12,7 @@ optimizer = true
 optimizer_runs = 200
 # 200 runs: below ~200 the optimizer moves 32-byte constants into a data section after the code, which
 # QDay's opcode checker (tools/check-shanghai.mjs) reads as instructions and flags as TLOAD/MCOPY.
-# BiuWuiCircle stays under the 24,576-byte limit (EIP-170) at 200; circles are clones of one implementation.
+# SovereignCircle stays under the 24,576-byte limit (EIP-170) at 200; circles are clones of one implementation.
 remappings = [
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "forge-std/=lib/forge-std/src/",
