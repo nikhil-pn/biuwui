@@ -88,7 +88,9 @@ export async function renderLockTest() {
   const ul = document.getElementById("attempts");
   if (!ul) return;
   const runs = await proofRuns();
-  const steps = runs.flatMap((r) => r.steps).filter((s) => /payee lock|standing order|bids|approves/i.test(s.step)).slice(0, 6);
+  const all = runs.flatMap((r) => r.steps);
+  const first = (re) => all.find((s) => re.test(s.step));
+  const steps = [first(/bids/i), first(/approves/i), first(/sets a standing order/i), first(/standing order collects/i), ...all.filter((s) => /payee lock/i.test(s.step))].filter(Boolean);
   if (!steps.length) return;
   ul.replaceChildren(
     ...steps.map((s) => {

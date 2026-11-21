@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Biu Wui live · every circle on the QDay Aevum testnet</title>
+  <meta name="description" content="Watch Biu Wui circles run on the QDay Aevum testnet: pledges, signed payments, bids, approvals and releases, every one on chain.">
+  <meta name="theme-color" content="#eeeeef">
+  <meta property="og:title" content="Biu Wui live · every circle on the QDay Aevum testnet">
+  <meta property="og:description" content="Watch Biu Wui circles run on the QDay Aevum testnet: pledges, signed payments, bids, approvals and releases, every one on chain.">
+  <meta property="og:image" content="https://biuwui.exprmnts.fun/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/glass.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/story.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="nav-wrap">
+    <nav class="nav glass sheen" aria-label="Main">
+      <a class="brand" href="/"><span class="cjk" aria-hidden="true">標會</span>Biu Wui</a>
+      <div class="nav-links">
+        <a href="/how">How it works</a>
+        <a href="/live" aria-current="page">Live</a>
+        <a href="/security">Security</a>
+        <a href="/proof">Proof</a>
+      </div>
+      <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+      <button class="nav-menu" aria-label="Menu" aria-expanded="false" aria-controls="nav-sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
+    </nav>
+    <div class="nav-sheet glass strong" id="nav-sheet" hidden>
+      <a href="/how">How it works</a>
+      <a href="/live" aria-current="page">Live</a>
+      <a href="/security">Security</a>
+      <a href="/proof">Proof</a>
+      <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+    </div>
+  </header>
+  <main class="page">
+    <header class="page-head">
+      <p class="eyebrow">Live on the testnet</p>
+      <h1>Every circle, live on chain.</h1>
+      <p class="lede">Visitors open practice circles with Ah Ming and Kitty, two friendly bots run by our circle secretary, and play two-minute rounds. Every line is an on-chain transaction, and members paid no gas for any of them.</p>
+    </header>
+    <dl class="stats" aria-live="polite">
+      <div class="glass"><dt>Circles run</dt><dd class="num" id="st-circles">–</dd></div>
+      <div class="glass"><dt>Rounds paid out</dt><dd class="num" id="st-rounds">–</dd></div>
+      <div class="glass"><dt>Paid into pots</dt><dd class="num" id="st-volume">–</dd></div>
+      <div class="glass"><dt>Members joined</dt><dd class="num" id="st-members">–</dd></div>
+    </dl>
+    <section class="block" id="live">
+        <div class="feed-card">
+          <header class="feed-head">
+            <span id="feed-circle">Loading the circles…</span>
+            <span class="feed-timer" id="feed-timer"></span>
+          </header>
+          <ul class="feed" id="feed"></ul>
+        </div>
+      </section>
+      <section class="cta-band glass sheen">
+        <div><h2>Start your first savings circle</h2><p>Make a wallet or connect yours, choose the share and how often, and invite your friends. Every step runs on the QDay Aevum testnet, and you never need gas.</p></div>
+        <a class="btn-primary" href="https://app.biuwui.exprmnts.fun/?mode=live">Start saving</a>
+      </section>
+      <footer class="foot">
+        <p>Biu Wui · built for QDay's <i>Aevum Builder Challenge</i> by Nikhil and Hina · MIT license</p>
+        <p><a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a> · <a href="https://app.biuwui.exprmnts.fun/" target="_blank" rel="noopener">The app</a> · <a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">Factory on the explorer</a></p>
+        <p class="fine">Testnet only. tUSD8 is QDay's test dollar and has no value.</p>
+      </footer>
+  </main>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
