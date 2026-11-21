@@ -6,6 +6,7 @@ import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
 import {BiuWuiFactory} from "../src/BiuWuiFactory.sol";
 
 /// @notice Deploys the circle implementation and the factory. On Aevum the token is the real tUSD8.
+/// Set IMPLEMENTATION=<address> to reuse an existing circle implementation.
 /// Run (legacy transactions, as on QDay's own faucet):
 ///   forge script script/Deploy.s.sol --rpc-url aevum --broadcast --legacy --account <keystore>
 contract Deploy is Script {
@@ -13,8 +14,9 @@ contract Deploy is Script {
 
     function run() external returns (BiuWuiFactory factory, BiuWuiCircle implementation) {
         address token = vm.envOr("TOKEN", TUSD8);
+        address existing = vm.envOr("IMPLEMENTATION", address(0));
         vm.startBroadcast();
-        implementation = new BiuWuiCircle();
+        implementation = existing == address(0) ? new BiuWuiCircle() : BiuWuiCircle(existing);
         factory = new BiuWuiFactory(token, address(implementation));
         vm.stopBroadcast();
         console.log("implementation", address(implementation));
