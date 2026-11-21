@@ -31,7 +31,8 @@ Full rules: [`docs/RULES.md`](docs/RULES.md).
 ## Live on Aevum testnet (chain 44005)
 | | |
 |---|---|
-| Factory (verified) | [`0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89`](https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89) |
+| Factory (verified, gasless open) | [`0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA`](https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA) |
+| First factory (verified) | [`0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89`](https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89) |
 | Circle implementation (verified) | [`0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf`](https://explorer-test.qday.info/address/0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf) |
 | First full circle (32 txs, members spent 0 gas) | [`0xfFd7…a1F2`](https://explorer-test.qday.info/address/0xfFd7334858a51C528E945C9587eFE3b5e0C6a1F2) · [all transactions](docs/PROOF.md) |
 

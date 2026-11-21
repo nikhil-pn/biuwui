@@ -5,12 +5,18 @@
   "explorer": "https://explorer-test.qday.info",
   "token": "0x456569838f1d43009A91ebA4263147Afd7233483",
   "implementation": "0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf",
-  "factory": "0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89",
+  "factory": "0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA",
   "deployBlock": 3737723,
   "deployTxs": {
     "implementation": "0xbd721c5b33b687fb7cb4822b021294df47bcb6b2a81cc0422cb55b8df2b066c2",
-    "factory": "0x9140b539839ad59dac608c5bc3b9839e627d21e61cde5ec65cf264c3b143a5ba"
+    "factory": "0xb104166b8e0a92ed2869ca9fc5bd299235f67bf5355c51e59e95edaeb78e939c"
   },
   "deployer": "0x1b062F21511BA1807E9053A57b40c32fb4C31f8b",
-  "verified": true
+  "verified": true,
+  "factoryV1": {
+    "address": "0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89",
+    "tx": "0x9140b539839ad59dac608c5bc3b9839e627d21e61cde5ec65cf264c3b143a5ba",
+    "note": "first factory (no gasless open); used by the first demo circle"
+  },
+  "factoryDeployBlock": 3741003
 }
