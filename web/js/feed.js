@@ -66,6 +66,8 @@ export const usd = (units) => {
   return `${neg ? "−" : ""}$${whole}.${dec}`;
 };
 const time = (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+/** "Kitty's" or "your". */
+const poss = (a) => (who(a) === "You" ? "your" : `${who(a)}'s`);
 const HOW = ["paid", "signed a payment (no gas)", "paid by standing order", "pledge counts as round 1", "covered from security"];
 
 /** One readable line for one event: icon, kind, text, sub-line. */
@@ -77,24 +79,24 @@ function describe(name, log, names, quorum) {
   switch (name) {
     case "Paid": {
       const how = Number(w(d, 1));
-      return [how === 2 ? ICON.repeat : ICON.in, "", how === 3 ? `${who(topicAddr(t[2]))}'s ${usd(w(d, 0))} pledge counts for round 1` : `${who(topicAddr(t[2]))} paid ${usd(w(d, 0))}`, `${HOW[how] ?? "paid"} · ${rd(topicNum(t[1]))}`];
+      return [how === 2 ? ICON.repeat : ICON.in, "", how === 3 ? `${poss(topicAddr(t[2])).replace(/^your/, "Your")} ${usd(w(d, 0))} pledge counts for round 1` : `${who(topicAddr(t[2]))} paid ${usd(w(d, 0))}`, `${HOW[how] ?? "paid"} · ${rd(topicNum(t[1]))}`];
     }
     case "Bid": return [ICON.bid, "", `${who(topicAddr(t[2]))} bid a ${usd(w(d, 0))} discount`, `signed, no gas · ${rd(topicNum(t[1]))}`];
     case "AuctionClosed": return [ICON.gavel, "", `Auction closed: ${who(topicAddr(t[2]))} wins the ${usd(w(d, 2))} pot`, `${usd(w(d, 1))} discount · payee locked · ${rd(topicNum(t[1]))}`];
     case "Approved": return [ICON.ok, "", `${who(topicAddr(t[2]))} approved the release`, `${Number(w(d, 0))} of ${quorum} needed · ${rd(topicNum(t[1]))}`];
-    case "Released": return [ICON.out, "release", `${usd(w(d, 1))} paid to ${who(topicAddr(t[2]))}'s locked payee`, `${usd(w(d, 2) - w(d, 3))} shared with members, ${usd(w(d, 4))} held as security · ${rd(topicNum(t[1]))}`];
+    case "Released": return [ICON.out, "release", `${usd(w(d, 1))} paid to ${poss(topicAddr(t[2]))} locked payee`, `${usd(w(d, 2) - w(d, 3))} shared with members, ${usd(w(d, 4))} held as security · ${rd(topicNum(t[1]))}`];
     case "Joined": return [ICON.plus, "", `${who(topicAddr(t[1]))} joined with a pledge`, `payee ${dataString(d, 2)} · ${circle}`];
     case "Left": return [ICON.minus, "", `${who(topicAddr(t[1]))} left and got ${usd(w(d, 0))} back`, circle];
     case "RoundStarted": return [ICON.round, "", `Round ${topicNum(t[1])} started`, `bidding until ${time(Number(w(d, 1)))} · ${circle}`];
-    case "Withdrawn": return [ICON.out, "", `${usd(w(d, 0))} paid out to ${who(topicAddr(t[1]))}'s payee`, circle];
+    case "Withdrawn": return [ICON.out, "", `${usd(w(d, 0))} paid out to ${poss(topicAddr(t[1]))} payee`, circle];
     case "Completed": return [ICON.star, "release", "Circle complete: every member took the pot once", circle];
     case "CircleOpened": return [ICON.open, "", `${who(topicAddr(t[1]))} opened ${circle}`, `${usd(w(d, 0))} a round · ${Number(w(d, 1))} seats`];
     case "Dissolved": return [ICON.stop, "fail", "Circle dissolved, members refunded pro rata", circle];
     case "Cancelled": return [ICON.stop, "fail", "The circle did not fill: every pledge refunded", circle];
-    case "SecurityApplied": return [ICON.shield, "", `${who(topicAddr(t[2]))}'s share covered from their security`, rd(topicNum(t[1]))];
+    case "SecurityApplied": return [ICON.shield, "", `${poss(topicAddr(t[2])).replace(/^your/, "Your")} share covered from security`, rd(topicNum(t[1]))];
     case "PayeeChangeRequested": return [ICON.warn, "fail", `${who(topicAddr(t[1]))} asked to send ${who(topicAddr(t[1])) === "You" ? "your" : "their"} pot to ${dataString(d, 1)}`, `takes effect at ${time(Number(w(d, 2)))}, cancellable · ${circle}`];
     case "PayeeChangeCancelled": return [ICON.lock, "", `${who(topicAddr(t[1]))} cancelled a payee change`, circle];
-    case "PayeeChanged": return [ICON.lock, "", `${who(topicAddr(t[1]))}'s payee is now ${dataString(d, 1)}`, `${dataAddr(d, 0).slice(0, 6)}…${dataAddr(d, 0).slice(-4)} · ${circle}`];
+    case "PayeeChanged": return [ICON.lock, "", `${poss(topicAddr(t[1])).replace(/^your/, "Your")} payee is now ${dataString(d, 1)}`, `${dataAddr(d, 0).slice(0, 6)}…${dataAddr(d, 0).slice(-4)} · ${circle}`];
     case "StandingOrderSet": return [ICON.repeat, "", `${who(topicAddr(t[1]))} set a standing order`, `one share a round, at most ${Number(w(d, 0))} rounds · ${circle}`];
     case "StandingOrderRevoked": return [ICON.repeat, "", `${who(topicAddr(t[1]))} revoked their standing order`, circle];
     default: return null;
