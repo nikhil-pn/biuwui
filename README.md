@@ -5,7 +5,7 @@ only go to a named and locked payee, and nobody (not even the organiser) can run
 
 > Built for the QDay **Aevum Builder Challenge #1** (DoraHacks), Crowdfunding track.
 > Submission deadline: **11 Dec 2026, 16:00 HKT (08:00 UTC)**. Status: **live on Aevum testnet**: contracts verified, web app + gasless
-> relayer at https://biuwui.exprmnts.fun, secretary bot running, a full circle on chain in [`docs/PROOF.md`](docs/PROOF.md).
+> relayer at https://app.biuwui.exprmnts.fun, secretary bot running, a full circle on chain in [`docs/PROOF.md`](docs/PROOF.md).
 
 A Biu Wui (標會, Cantonese for "bidding association") is how families and small shops in Hong Kong and across Asia
 have saved and borrowed for generations: everyone pays the same amount each round, and each round one member takes
@@ -16,7 +16,7 @@ The weak point has always been trust: the organiser holds the cash, a member sto
 or the pot goes to the wrong person. Biu Wui moves the rules into a contract on Aevum.
 
 **Try it: https://biuwui.exprmnts.fun** (no wallet needed: open a practice circle with two friendly bots and play full
-rounds in a few minutes) · app: https://biuwui.exprmnts.fun/app · proof: https://biuwui.exprmnts.fun/proof
+rounds in a few minutes) · app: https://app.biuwui.exprmnts.fun · proof: https://biuwui.exprmnts.fun/proof
 
 ## What makes it safe
 | Risk | What the contract does |
@@ -56,6 +56,9 @@ src/BiuWuiFactory.sol    opens circles as EIP-1167 clones of one implementation;
 test/                    unit tests, invariants (test/Invariant.t.sol), fork test on real tUSD8 (test/fork)
 docs/RULES.md            the rules in plain words
 tools/check-shanghai.mjs opcode check from the Aevum Starter Kit
+web/                     the site (biuwui.exprmnts.fun): plain HTML, CSS and JS that read the chain directly
+web-src/                 the app's TypeScript, built into web-app/ (app.biuwui.exprmnts.fun) by scripts/build-app.sh
+api/                     the gasless relayer and starter faucet, bundled into web-app/api/ by the same script
 ```
 
 ## Credits
