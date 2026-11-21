@@ -154,8 +154,9 @@ function stepRows(p: Proof, withTx: boolean) {
               : "Joining: signed pledges";
       const sep = group !== last ? `<tr class="round-sep"><td colspan="${withTx ? 3 : 2}">${esc(group)}</td></tr>` : "";
       last = group;
-      const text = esc(s.step.replace(/^Round \d+: /, ""));
-      return `${sep}<tr><td class="n">${i + 1}</td><td>${text}</td>${withTx ? `<td class="mono"><a href="${txLink(s.tx)}" target="_blank" rel="noopener">${short(s.tx)} ↗</a></td>` : ""}</tr>`;
+      const t = s.step.replace(/^Round \d+: /, "");
+      const text = esc(t[0].toUpperCase() + t.slice(1));
+      return `${sep}<tr><td class="n">${i + 1}</td><td>${text}</td>${withTx ? `<td class="mono tx"><a href="${txLink(s.tx)}" target="_blank" rel="noopener">${short(s.tx)} ↗</a></td>` : ""}</tr>`;
     })
     .join("");
 }

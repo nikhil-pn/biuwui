@@ -209,8 +209,9 @@ body { min-height: 100svh; }
 .tbl td:first-child { color: var(--ink); font-weight: 600; width: 34%; }
 .tbl td a { text-decoration: none; font-weight: 500; color: var(--red-deep); }
 .tbl td a:hover { text-decoration: underline; }
-.tbl .n { width: 44px; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.tbl td.n, .tbl th.n { width: 44px; font-weight: 500 !important; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
 .tbl .mono { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.tbl td.tx { white-space: nowrap; width: 1%; }
 .tbl tr.round-sep td { background: rgba(207, 58, 36, 0.05); color: var(--red-deep); font-weight: 700; font-size: 13px; padding: 9px 16px; }
 @media (max-width: 700px) {
   .tbl.stack thead { display: none; }
