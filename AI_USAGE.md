@@ -1,6 +1,6 @@
-# How AI built Biu Wui
+# How AI built Sovereign
 
-Biu Wui was built by a two-person team working with an AI coding agent, [Claude Code](https://claude.com/claude-code)
+Sovereign was built by a two-person team working with an AI coding agent, [Claude Code](https://claude.com/claude-code)
 (Anthropic), running in a terminal on our own always-on Linux machine and driven from a phone.
 **The agent wrote the code, tests, scripts, website, app and docs in this repository** during the challenge's build
 window, using the official [Aevum Starter Kit](https://github.com/qday-io/aevum-starter-kit) as the reference for the
@@ -46,7 +46,7 @@ Every feature went through the same loop:
 | Area | What the agent produced | Where |
 | --- | --- | --- |
 | Research | Read the challenge rules, QDay's wiki and starter kit, counted public repos per track (about 80, mostly agent wallets and invoices, none for crowdfunding) and checked past hackathon winners per theme; recommended a bid-for-the-pot savings circle for the Crowdfunding track | team notes (outside the repo); the result is `docs/RULES.md` |
-| Contracts | `BiuWuiCircle` (pledge on joining with refunds if the circle does not fill, pay, discount auction, quorum release, payee lock with a change delay, capped standing orders, security held from winners, dissolve and refunds, a signed version of every action), `BiuWuiFactory` (EIP-1167 clones, gasless `createCircleWithSig`) | `src/` |
+| Contracts | `SovereignCircle` (pledge on joining with refunds if the circle does not fill, pay, discount auction, quorum release, payee lock with a change delay, capped standing orders, security held from winners, dissolve and refunds, a signed version of every action), `SovereignFactory` (EIP-1167 clones, gasless `createCircleWithSig`) | `src/` |
 | Tests | 48 Foundry tests: unit tests per action, signature tampering and replay, fuzz tests, and invariants (money conserved, circle always solvent, nobody wins twice) over random action sequences; a fork test that runs a whole gasless circle against the real tUSD8 | `test/` |
 | Chain scripts | Deploy and verify, a full demo circle on the testnet with every transaction recorded, a practice-circle visitor, the relayer test suite | `script/`, `scripts/` |
 | The relayer | Serverless functions that submit members' signatures and pay the gas, with an allow-list, simulate-first, one-hour signature windows, rate limits and a daily gas cap; a starter faucet | `api/`, `docs/API.md` |
@@ -59,8 +59,8 @@ Every feature went through the same loop:
 
 **Nikhil P N** (builder, registered on DoraHacks):
 
-- chose the challenge and the track from the agent's research, and the name Biu Wui (標會, Cantonese for "bidding
-  association") because QDay is a Hong Kong team;
+- chose the challenge and the track from the agent's research, and the name Sovereign, because in this circle the
+  members, not an organiser, are sovereign over their own money;
 - set the bar: a clean wallet-style design from a reference screenshot he sent, app-first, a Live/Demo toggle, short
   pages on the phone;
 - made the product calls: members never pay gas, the payee lock, the practice circle with bots;
@@ -79,7 +79,7 @@ and the architecture of the site and the app. The owner reviewed the results rat
   can always pay what it owes. `make test-fork` runs a whole gasless circle against the real tUSD8 on a fork of Aevum.
 - **QDay's own check:** `make build` runs the starter kit's Shanghai opcode check on every build.
 - **The chain:** every feature was run for real on Aevum testnet. `docs/PROOF.md` lists the deploys, the verified
-  contracts and a full three-member circle (32 transactions) in which the members held no gas token at all.
+  contracts and a full three-member circle (29 transactions) in which the members held no gas token at all.
 - **The relayer:** `scripts/test-relay.ts` checks 13 cases against a fork: gasless open and join, replay refused,
   non-circle targets refused, functions outside the allow-list refused, long-lived signatures refused, rate limits,
   and the faucet's once-per-address rule.
@@ -129,9 +129,9 @@ what each member is owed when a circle ends. Its transactions are public on the 
 
 ## 9. What the AI did not do
 
-- It did not decide what Biu Wui is for or who it serves; the team did.
+- It did not decide what Sovereign is for or who it serves; the team did.
 - It did not hold or move real money, and it typed no passwords or codes.
-- Biu Wui itself uses no AI at run time: the contracts, the relayer, the bot and the app are deterministic, so nothing
+- Sovereign itself uses no AI at run time: the contracts, the relayer, the bot and the app are deterministic, so nothing
   a model says can move a pot.
 
 ## Reproduce

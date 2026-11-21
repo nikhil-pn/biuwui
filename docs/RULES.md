@@ -1,12 +1,12 @@
-# Biu Wui rules, in plain words
+# Sovereign rules, in plain words
 
-A Biu Wui (標會, Cantonese "bidding association") is a savings circle: a group of people who trust each other a
+A Sovereign circle is a bidding savings circle: a group of people who trust each other a
 little pay the same amount every round, and each round one of them takes the whole pot. Who takes it is decided
 by an auction: members bid the **discount** they accept, the highest discount wins, and the discount is shared
 out among everyone as a **dividend**. People who need money early pay for it; patient people earn it. The same
 idea is called a hui in Mandarin, a tanomoshi in Japan, a kye in Korea, a chit fund in India.
 
-The contract (`src/BiuWuiCircle.sol`) is the whole rulebook. Nobody, including the organiser and us, can change
+The contract (`src/SovereignCircle.sol`) is the whole rulebook. Nobody, including the organiser and us, can change
 the rules of a circle after it opens. There is no owner, no admin key and no upgrade.
 
 ## 1. Opening and joining (the pledge)

@@ -1,4 +1,4 @@
-# Biu Wui HTTP API (gasless relayer + starter faucet)
+# Sovereign HTTP API (gasless relayer + starter faucet)
 
 Both run as serverless functions next to the web app (`/api/*` on the same origin). Members never send
 transactions: they sign in their wallet, the app posts the signature here, and the relayer pays the gas.
@@ -8,7 +8,7 @@ Errors are `{ "error": "<plain-language message for the user>", "code": "<SHORT_
 
 ## `POST /api/relay`
 
-Submit one signed action. The relayer only ever calls the functions below, only on the Biu Wui factory or on a
+Submit one signed action. The relayer only ever calls the functions below, only on the Sovereign factory or on a
 circle that `factory.isCircle(circle)` confirms, and simulates every call before sending it.
 
 ```json
@@ -20,7 +20,7 @@ poll the chain for the receipt). The app should then wait for the receipt with v
 
 | `fn` | `target` | `args` (in order) | Signed by the member |
 |---|---|---|---|
-| `createCircleWithSig` | factory | `[params, organiser, deadline, sig]` | EIP-712 `OpenCircle` (factory domain `"Biu Wui Factory"`, `"1"`) |
+| `createCircleWithSig` | factory | `[params, organiser, deadline, sig]` | EIP-712 `OpenCircle` (factory domain `"Sovereign Factory"`, `"1"`) |
 | `joinWithAuthorization` | circle | `[member, payeeName, payout, {validAfter, validBefore, v, r, s}]` | EIP-3009 `ReceiveWithAuthorization` on tUSD8, value = share, nonce = `joinNonce(member, payout, payeeName)` |
 | `payWithAuthorization` | circle | `[member, {validAfter, validBefore, v, r, s}]` | EIP-3009, value = share, nonce = `payNonce(member, currentRound)` |
 | `setStandingOrderWithSig` | circle | `[member, maxRounds, expiresAt, deadline, orderSig, {deadline, v, r, s}]` | EIP-712 `StandingOrder` + EIP-2612 `Permit` (value = share × maxRounds, spender = circle) |
@@ -33,11 +33,11 @@ poll the chain for the receipt). The app should then wait for the receipt with v
 | `closeAuction`, `release`, `cancelUnfilled`, `dissolve` | circle | `[]` | nothing (anyone may call; the rules decide) |
 | `collect`, `withdrawFor` | circle | `[member]` | nothing (money only moves along the member's own fixed path) |
 
-`params` for `createCircleWithSig` is the `BiuWuiCircle.Params` struct as an object:
+`params` for `createCircleWithSig` is the `SovereignCircle.Params` struct as an object:
 `{ token, share, size, joinWindow, roundLength, graceLength, payeeDelay, maxDiscountBps, feeBps, quorumBps, securityBps, name }`
 (`token` is ignored and forced to tUSD8 by the factory; send the tUSD8 address).
 
-Circle EIP-712 domain: `{ name: "Biu Wui", version: "1", chainId: 44005, verifyingContract: <circle> }`.
+Circle EIP-712 domain: `{ name: "Sovereign", version: "1", chainId: 44005, verifyingContract: <circle> }`.
 tUSD8 domain: `{ name: "tUSD8", version: "2", chainId: 44005, verifyingContract: 0x4565…3483 }`.
 Type definitions: `scripts/lib/sign.ts` (shared by the app, the relayer and the bot).
 

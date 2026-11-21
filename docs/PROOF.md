@@ -6,60 +6,56 @@ Everything below can be checked on the explorer. Contract sources are verified t
 
 | What | Address |
 |---|---|
-| BiuWuiFactory (verified, current: adds gasless `createCircleWithSig`) | [0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA](https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA) |
-| BiuWuiFactory v1 (verified, opened the circle below) | [0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89](https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89) |
-| BiuWuiCircle implementation (verified) | [0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf](https://explorer-test.qday.info/address/0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf) |
+| SovereignFactory (verified; opens circles as clones, gasless `createCircleWithSig`) | [0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87](https://explorer-test.qday.info/address/0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87) |
+| SovereignCircle implementation (verified) | [0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed](https://explorer-test.qday.info/address/0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed) |
 | tUSD8 (QDay's test stablecoin) | [0x456569838f1d43009A91ebA4263147Afd7233483](https://explorer-test.qday.info/address/0x456569838f1d43009A91ebA4263147Afd7233483) |
-| Deploy transactions | [implementation](https://explorer-test.qday.info/tx/0xbd721c5b33b687fb7cb4822b021294df47bcb6b2a81cc0422cb55b8df2b066c2) · [factory](https://explorer-test.qday.info/tx/0x9140b539839ad59dac608c5bc3b9839e627d21e61cde5ec65cf264c3b143a5ba) |
+| Deploy transactions | [implementation](https://explorer-test.qday.info/tx/0x105279c33c217f56c23a35c6044285cbec546c2488e10205b3e1a31ae4c19c98) · [factory](https://explorer-test.qday.info/tx/0x8635ab70a2859fbd53aabfef7a3e51da34c8feb7145e46fcec5c0024026f75c2) |
 
-## A whole circle, live (2026-11-21 10:01 UTC)
+## A whole circle, live (2026-11-21 14:36 UTC)
 
-Circle [`0xfFd7334858a51C528E945C9587eFE3b5e0C6a1F2`](https://explorer-test.qday.info/address/0xfFd7334858a51C528E945C9587eFE3b5e0C6a1F2): 3 members (Ah Ming, Kitty, Wing), 0.5 tUSD8 a round, 75-second rounds
+Circle [`0x378Df2b129aD08992884D9f752c85DA3e88012ED`](https://explorer-test.qday.info/address/0x378Df2b129aD08992884D9f752c85DA3e88012ED): 3 members (Ah Ming, Kitty, Wing), 0.25 tUSD8 a round, 75-second rounds
 for the demo. **The members hold no tQDAY at all: every one of their actions is a signature that our relayer submitted.**
 Produced by `npx tsx scripts/demo-circle.ts`.
 
 | # | Step | Transaction |
 |---|---|---|
-| 1 | Fund Ah Ming with 1.5 tUSD8 | [0x7c253b9f…](https://explorer-test.qday.info/tx/0x7c253b9f91f176757948b34eb5550019b393af80e8d23cf107a71862da7c13b4) |
-| 2 | Fund Kitty with 1.5 tUSD8 | [0x8d72063d…](https://explorer-test.qday.info/tx/0x8d72063d24a21203edab79cf56d573f394c762f72a0dafa11f3035c57bc66be4) |
-| 3 | Fund Wing with 1.5 tUSD8 | [0xede19753…](https://explorer-test.qday.info/tx/0xede19753c642279f49b31ea99b6b179e026d4a63fe24b49072caf3411b2f9e3c) |
-| 4 | Open circle 'Sham Shui Po Biu Wui' (3 members, 0.5 tUSD8 a round) | [0x8bf3803b…](https://explorer-test.qday.info/tx/0x8bf3803b6e3e47afb17e0c018cf41c9c244e647fa4d41f52afb8618f96462004) |
-| 5 | Ah Ming joins with a signed pledge (no gas) | [0x3b63b497…](https://explorer-test.qday.info/tx/0x3b63b4976c814344d6c8f6a49c157c27004574a3ea4573c06c9ef95403c5fa51) |
-| 6 | Kitty joins with a signed pledge (no gas) | [0x370d6a91…](https://explorer-test.qday.info/tx/0x370d6a91376a782b710b780f7dda47db9e329762e4b5e6ff70b7aee7923405e2) |
-| 7 | Wing joins with a signed pledge (no gas) | [0x161ae806…](https://explorer-test.qday.info/tx/0x161ae8060128a0b81b3af0f02fed89bfa8505fe863c5647142942a8bffa68a01) |
-| 8 | Wing sets a standing order: 1 share a round, max 2 rounds, expires in 7 days (no gas) | [0xaa80b5b7…](https://explorer-test.qday.info/tx/0xaa80b5b73d1a2ac79b5d128af523a1444bf0db5c189e45b9436c5732ec97c15c) |
-| 9 | Round 1: Kitty bids a 0.1 tUSD8 discount (signed, no gas) | [0x6f9db760…](https://explorer-test.qday.info/tx/0x6f9db7600a88e00f6647fb30e8c19330f794195c16fbbfa3306eb68bdf6bdb56) |
-| 10 | Round 1: auction closed (anyone can call it) | [0xf3d1c4ea…](https://explorer-test.qday.info/tx/0xf3d1c4eafcd805228001f24e42ff4b454b0bbee5b10816d72e7b18e6c3b24f99) |
-| 11 | Round 1: Ah Ming approves the release (signed, no gas) | [0x8ad53d87…](https://explorer-test.qday.info/tx/0x8ad53d874ed89bf61e9237228d76be4bbb9b1ac7f40da7479ce04e89b2677b8c) |
-| 12 | Round 1: Wing approves the release (signed, no gas) | [0x40e2d66a…](https://explorer-test.qday.info/tx/0x40e2d66aee74bc404c89ab73f56a6b9277c7a92269ef078eb900ced603a24153) |
-| 13 | Round 1: pot released to Kitty's locked payee | [0xed7a1fc2…](https://explorer-test.qday.info/tx/0xed7a1fc219221cc58327b1311099956f4fe02aacf68b06ebeed0f934deea692b) |
-| 14 | Round 2: Ah Ming pays a signed share (no gas) | [0x4dc97554…](https://explorer-test.qday.info/tx/0x4dc9755405c6fdfdfbeaa2fe01bcbcdf66323766d16df9e87aa9cf613441b89f) |
-| 15 | Round 2: Kitty pays a signed share (no gas) | [0x06721d2d…](https://explorer-test.qday.info/tx/0x06721d2d65fc25ec872c56902e2665ed409cda811f47c6083ddb47e9f55dd99f) |
-| 16 | Round 2: standing order collects Wing's share | [0x4f74ae15…](https://explorer-test.qday.info/tx/0x4f74ae15f32cb5d703241873ee27ab870806d02e11b5a7e94b30fa26831fd1c0) |
-| 17 | Payee lock: a change of Ah Ming's payout address is requested (waits 120 s, visible to all) | [0x3fe4d418…](https://explorer-test.qday.info/tx/0x3fe4d4185bcbaa707708a88ee4cb0e1dc3adaddc641fe450088795858326ab84) |
-| 18 | Payee lock: Ah Ming cancels it with one signature before it takes effect | [0x6266f403…](https://explorer-test.qday.info/tx/0x6266f403becc555e1ff029f4013b760060e5cc5525397f3d1f7b7da8ab3cf32b) |
-| 19 | Round 2: auction closed (anyone can call it) | [0x69c0c54a…](https://explorer-test.qday.info/tx/0x69c0c54a8345b95f42ad4bdfea6116b4a0080f62a2e4c59d9b52dbbc6975bc73) |
-| 20 | Round 2: Ah Ming approves the release (signed, no gas) | [0x5e00c71c…](https://explorer-test.qday.info/tx/0x5e00c71c60628854f54bbdc73317d2d2b6d9658b9f3643191f4ae648ed7704b1) |
-| 21 | Round 2: Kitty approves the release (signed, no gas) | [0x38c67da2…](https://explorer-test.qday.info/tx/0x38c67da261fadeef55b84b448015fc2952d2e5eba6c70b0ee0bceeb91dd91e04) |
-| 22 | Round 2: pot released to Ah Ming's locked payee | [0x84009cc5…](https://explorer-test.qday.info/tx/0x84009cc505055ea9ffe037ee2febb17ab76d41bfb1af263fde55dfbb496b6998) |
-| 23 | Round 3: Ah Ming pays a signed share (no gas) | [0x3b5521b7…](https://explorer-test.qday.info/tx/0x3b5521b7c0ea814d27bc61d6febda0878d6cb1a7daec3c5fa44bf5248fbed435) |
-| 24 | Round 3: Kitty pays a signed share (no gas) | [0xf3d99054…](https://explorer-test.qday.info/tx/0xf3d9905447f31b5cd05167eb4c8878f8eb78cd0b2d9a1b4627e63a5c3c20342c) |
-| 25 | Round 3: standing order collects Wing's share | [0x8e0283f7…](https://explorer-test.qday.info/tx/0x8e0283f7b23bdbb6c5b5e864682d6525a7468c5266254a314a30bdf9afa3d83b) |
-| 26 | Round 3: auction closed (anyone can call it) | [0x2852b3df…](https://explorer-test.qday.info/tx/0x2852b3df76735a03c4028e75195fcdd9cd4349789a5ce15db4036239088d3338) |
-| 27 | Round 3: Ah Ming approves the release (signed, no gas) | [0xe65f55c6…](https://explorer-test.qday.info/tx/0xe65f55c66fe308a940c5ca491c03617388619bdaa5b30245a7f7fd64d022122a) |
-| 28 | Round 3: Kitty approves the release (signed, no gas) | [0x33e8bc2e…](https://explorer-test.qday.info/tx/0x33e8bc2e8fd209d3288b22391902bebc771dc5963da9cec4142eeb3d9962257d) |
-| 29 | Round 3: pot released to Wing's locked payee | [0xc99eabbe…](https://explorer-test.qday.info/tx/0xc99eabbea4f6d78603ae30dd378412f83a27f20ea4f9ed0683acfa8cc392cf7d) |
-| 30 | Pay out Ah Ming's dividend and security (0.528333 tUSD8) | [0xce81dc98…](https://explorer-test.qday.info/tx/0xce81dc98461899dfc711ff18f4d78537aeba93b725c25501e46cf0f487ea4454) |
-| 31 | Pay out Kitty's dividend and security (0.728334 tUSD8) | [0x0437ddb3…](https://explorer-test.qday.info/tx/0x0437ddb391b057f75b7b36684a086c6658adca4f0c35787f04e89c359b473e77) |
-| 32 | Pay out Wing's dividend and security (0.028333 tUSD8) | [0xe815261d…](https://explorer-test.qday.info/tx/0xe815261db254a1e35d728ab5b55206aed67dd55ea345982e4fb2a7373041464e) |
+| 1 | Open circle 'Family Circle' (3 members, 0.25 tUSD8 a round) | [0xcab54eae…](https://explorer-test.qday.info/tx/0xcab54eae1ed19d77ad804d7c97f584911201c224ad74de29797a6096eedbeaad) |
+| 2 | Ah Ming joins with a signed pledge (no gas) | [0x37c8bbef…](https://explorer-test.qday.info/tx/0x37c8bbef1137944aa6cb87d495bdf9d03f5fcbf63e0e7b18ddb2249a0002851e) |
+| 3 | Kitty joins with a signed pledge (no gas) | [0xa54e6609…](https://explorer-test.qday.info/tx/0xa54e66093011808ebadce7de7cfe958d1a1b4fbd160d059ea6811ef5c2ffc70d) |
+| 4 | Wing joins with a signed pledge (no gas) | [0x10c8b084…](https://explorer-test.qday.info/tx/0x10c8b084b55b85e3b70ffcb850c5ae4e41c5acfe97ea30aeec0b9381954a4ef2) |
+| 5 | Wing sets a standing order: 1 share a round, max 2 rounds, expires in 7 days (no gas) | [0x6fb2401c…](https://explorer-test.qday.info/tx/0x6fb2401c56e14ec5c92ae5b6072d3802d14c3d729cfefe9bcb7252977dc309f8) |
+| 6 | Round 1: Kitty bids a 0.1 tUSD8 discount (signed, no gas) | [0xf9e8c839…](https://explorer-test.qday.info/tx/0xf9e8c83951825c4cd12c2939578421d5dd520a687969caeef7eff1c1f3d71ecc) |
+| 7 | Round 1: auction closed (anyone can call it) | [0xf348a7aa…](https://explorer-test.qday.info/tx/0xf348a7aa4d1d636c6b237d623ec667e2274bcbdd8ec792995f737594ca8041e7) |
+| 8 | Round 1: Ah Ming approves the release (signed, no gas) | [0xadbe3a6e…](https://explorer-test.qday.info/tx/0xadbe3a6e57dcd240eb9271406ea6e349ca5252765b43e65e824a777a1a0b0645) |
+| 9 | Round 1: Wing approves the release (signed, no gas) | [0xfef21bfe…](https://explorer-test.qday.info/tx/0xfef21bfe9e07ee94e98034d4ad7ef67ab8ff35892240b77c3ceb59fc4ef09f52) |
+| 10 | Round 1: pot released to Kitty's locked payee | [0x84a5e455…](https://explorer-test.qday.info/tx/0x84a5e4558988f276567dd7212dad14ec725838b546bdb747379c1a13757572e0) |
+| 11 | Round 2: Ah Ming pays a signed share (no gas) | [0x8daf8f0e…](https://explorer-test.qday.info/tx/0x8daf8f0e4ff450bec8fac58b919fe290762ab6fb36f20af066324d266b45480c) |
+| 12 | Round 2: Kitty pays a signed share (no gas) | [0x32d6dd36…](https://explorer-test.qday.info/tx/0x32d6dd36930fa3c721945f7c3804233d2547b0f0007af68ffdc7d98be09643a8) |
+| 13 | Round 2: standing order collects Wing's share | [0x7618bb56…](https://explorer-test.qday.info/tx/0x7618bb563f9b5f2b8699ddb8e63a1f3c24fda9821ec01e93dfae12143a325e2e) |
+| 14 | Payee lock: a change of Ah Ming's payout address is requested (waits 120 s, visible to all) | [0x1c3e3b44…](https://explorer-test.qday.info/tx/0x1c3e3b4438399c6ddaad50680838c2eec96812837dd2d2ad174bc130157a774e) |
+| 15 | Payee lock: Ah Ming cancels it with one signature before it takes effect | [0x94a02490…](https://explorer-test.qday.info/tx/0x94a02490d981150b71f4b610a19940f6e4c0191243907e6144021cc73ce9b8bf) |
+| 16 | Round 2: auction closed (anyone can call it) | [0x18e1ad58…](https://explorer-test.qday.info/tx/0x18e1ad5843b9ed2392d55300a48c9295fd51c6d940f8e93070172b4a46e60750) |
+| 17 | Round 2: Ah Ming approves the release (signed, no gas) | [0x4c08a0dc…](https://explorer-test.qday.info/tx/0x4c08a0dc1f98e9936e96d52b376e50bd6b53daba19ef7ce095e07ce993204929) |
+| 18 | Round 2: Kitty approves the release (signed, no gas) | [0x23c46937…](https://explorer-test.qday.info/tx/0x23c469373b17185f528ca8cce8ad26bc3e91cd366c676925546d5b884ad762ce) |
+| 19 | Round 2: pot released to Ah Ming's locked payee | [0x9b9be5d8…](https://explorer-test.qday.info/tx/0x9b9be5d88d98a56b0b2f94732f93791031f261510030eba6ef8f0914fff67fac) |
+| 20 | Round 3: Ah Ming pays a signed share (no gas) | [0xb7b2ed51…](https://explorer-test.qday.info/tx/0xb7b2ed51a114d76a1026430f4900e7f77623fc53985edb8e8f7055d19051dc50) |
+| 21 | Round 3: Kitty pays a signed share (no gas) | [0x8d605df1…](https://explorer-test.qday.info/tx/0x8d605df1491772e828773bc0e0ad28c2ac1c2e39fc91d37e90af8c7a2520f5d3) |
+| 22 | Round 3: standing order collects Wing's share | [0xb67c4eed…](https://explorer-test.qday.info/tx/0xb67c4eedb61de7d205c08421723cc8a8cfeb12593bdc7b4d4bd45a9505b646d0) |
+| 23 | Round 3: auction closed (anyone can call it) | [0xc3ef61e7…](https://explorer-test.qday.info/tx/0xc3ef61e754ac600ab99960c1bac1ce07826f49f76e1e80860694bca7fb68293c) |
+| 24 | Round 3: Ah Ming approves the release (signed, no gas) | [0xc7baf680…](https://explorer-test.qday.info/tx/0xc7baf6805589219f53e140b882a79ba3c81f682c962f52e766e801da2d3e5850) |
+| 25 | Round 3: Kitty approves the release (signed, no gas) | [0xb8623ceb…](https://explorer-test.qday.info/tx/0xb8623ceb761c8c4fe2e6855e5fcdc391ff4b45f71caa1a65adb77ef8c8975494) |
+| 26 | Round 3: pot released to Wing's locked payee | [0x4c8cb9f0…](https://explorer-test.qday.info/tx/0x4c8cb9f07180edfb7ae824841352b35942fb8439b49c908e988456f29c9ae5f2) |
+| 27 | Pay out Ah Ming's dividend and security (0.280833 tUSD8) | [0xd640362b…](https://explorer-test.qday.info/tx/0xd640362bd4618579ff15cae0f91855c156aa1c99f1b3fd6b870d01373bec5508) |
+| 28 | Pay out Kitty's dividend and security (0.355834 tUSD8) | [0x2cff3c5b…](https://explorer-test.qday.info/tx/0x2cff3c5bbc4d84853826e7775cf6092ea20686bc68a907c054c115fd02ab0f45) |
+| 29 | Pay out Wing's dividend and security (0.030833 tUSD8) | [0xf20627ec…](https://explorer-test.qday.info/tx/0xf20627eca4d9a0896b10e093b5704dcadf20ae103ad7c045e8fea5c75b14d8c2) |
 
 ### Result
 
-| Member | Started with | Ended with | Why |
-|---|---|---|---|
-| Ah Ming | 1.5 tUSD8 | 1.528333 | never bid; earned dividends from Kitty's discount |
-| Kitty | 1.5 tUSD8 | 1.428334 | took the first pot early for a 0.1 discount |
-| Wing | 1.5 tUSD8 | 1.528333 | paid by standing order; earned dividends |
-| Organiser | | +0.015 | 1% fee, taken out of the discount |
+| Member | Change | Why |
+|---|---|---|
+| Ah Ming | +0.030833 tUSD8 | never bid; earned dividends from Kitty's discount |
+| Kitty | −0.069166 tUSD8 | took the first pot early for a 0.1 discount |
+| Wing | +0.030833 tUSD8 | paid by standing order; earned dividends |
+| Organiser | +0.0075 tUSD8 | 1% fee, taken out of the discount |
 
-Totals add up to 4.5 tUSD8: no money created or lost. Members' tQDAY balance before and after: **0**.
+The changes add up to zero: no money created or lost. Members' tQDAY balance before and after: **0**.
