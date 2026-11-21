@@ -1,648 +1,1306 @@
-// Biu Wui app: wallet (burner or injected), faucet, practice circle, open/join, and the live circle view.
-// Reads come straight from Aevum; every write is a member's signature that /api/relay submits.
-import { parseUnits, type Address } from "viem";
-import { chopSvg, hydrateChops } from "../lib/chop";
-import { createRing, type RingMember } from "../lib/ring";
-import { addrLink, DEMO_CIRCLE, esc, fmt, PHASES, publicClient, short, txLink } from "../lib/chain";
-import * as act from "./actions";
-import { explain, faucet } from "./api";
-import { balanceOf, circleEvents, listCircles, loadCircle, type Circle, type CircleRow, type Ev, type Member } from "./data";
-import { openSheet, toast } from "./sheet";
-import { addAevum, burnerKey, connectInjected, displayName, forgetWallet, hasInjected, onInjectedChange, restoreWallet, useBurner, type Wallet } from "./wallet";
+/**
+ * Biu Wui, the app. A visitor makes a test wallet (or connects theirs), opens or joins a circle, and plays it
+ * round by round. Members only sign; the relayer pays every gas fee. The chain is the only state.
+ */
+import type { Address, Hex } from "viem";
+import * as A from "../lib/actions.ts";
+import { NET } from "../lib/aevum.ts";
+import { burner, hasInjected, injected, newKey, onAccountsChanged, type Wallet } from "../lib/wallet.ts";
+import { BOTS, PEOPLE } from "../../web/js/config.js";
+import { ICON, renderFeed, usd } from "../../web/js/feed.js";
+import { createRing, mountFlowDemo } from "../../web/js/ring.js";
+import { esc, friendly, openSheet, progressIn, toast, type Sheet } from "./ui.ts";
 
-const $ = <T extends HTMLElement = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
-const screen = $("#screen")!;
-let wallet: Wallet | null = null;
-let balance: bigint | null = null;
-let view: { stop(): void } | null = null;
-const now = () => Math.floor(Date.now() / 1000);
+const SITE = "https://biuwui.exprmnts.fun";
+const ZERO = "0x0000000000000000000000000000000000000000";
+const PHASES = ["Filling up", "Running", "Complete", "Dissolved", "Did not fill"];
+
+// ---------------------------------------------------------------- mode: live (real testnet use) or demo (guided, with bots)
+
+type Mode = "live" | "demo";
+const params = new URLSearchParams(location.search);
+const joinParam = params.get("join");
+const MODE: Mode = joinParam ? "live" : ((params.get("mode") as Mode | null) ?? (localStorage.getItem("biuwui.mode") as Mode | null) ?? "live") === "demo" ? "demo" : "live";
+localStorage.setItem("biuwui.mode", MODE);
+const DEMO = MODE === "demo";
+document.body.classList.add(DEMO ? "mode-demo" : "mode-live");
+
+function switchMode(to: Mode) {
+  localStorage.setItem("biuwui.mode", to);
+  location.href = location.pathname;
+}
+
+// ---------------------------------------------------------------- saved state (this device only, one wallet per mode)
+
+interface Saved {
+  /** The test wallet's key (testnet only), when this mode uses one. */
+  pk?: Hex;
+  wallet?: "burner" | "injected";
+  /** The name members see on your seat and payee. */
+  name?: string;
+  circles: Address[];
+  current?: Address;
+}
+const KEY = DEMO ? "biuwui.demo.v1" : "biuwui.live.v1";
+const saved: Saved = { circles: [], ...(JSON.parse(localStorage.getItem(KEY) ?? "null") ?? {}) };
+const save = () => localStorage.setItem(KEY, JSON.stringify(saved));
+
+let w: Wallet | null = null;
+const $ = (id: string) => document.getElementById(id)!;
+
+const money = (v: bigint) => {
+  const [whole, d] = usd(v).slice(1).split(".");
+  return `$${whole}<span class="dec">.${d}</span>`;
+};
+const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const same = (a?: string | null, b?: string | null) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
-const BOTS = new Set(["Ah Ming", "Kitty"]);
-const BLOCK_SEC = 1; // Aevum testnet makes about one block a second (measured)
-
-function clock(s: number) {
-  if (s <= 0) return "0:00";
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const ss = String(s % 60).padStart(2, "0");
-  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}:${ss}`;
+/** "You", a bot's name, or the payee name the member chose when they joined. */
+const nameOf = (a: string) => {
+  if (w && same(a, w.address)) return "You";
+  const bot = (PEOPLE as Record<string, string>)[a.toLowerCase()];
+  if (bot) return bot;
+  const i = snap?.members.findIndex((m) => same(m, a)) ?? -1;
+  return i >= 0 && snap!.state[i]?.payee.name ? snap!.state[i].payee.name : short(a);
+};
+/** 1:05 · 3h 20m · 2d 4h */
+function left(sec: number): string {
+  if (sec <= 0) return "time's up";
+  if (sec < 3600) return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")} left`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m left`;
+  return `${Math.floor(sec / 86400)}d ${Math.floor((sec % 86400) / 3600)}h left`;
 }
-function ago(sec: number) {
-  if (sec < 45) return "just now";
-  if (sec < 3600) return `${Math.round(sec / 60)} min ago`;
-  if (sec < 86400) return `${Math.round(sec / 3600)} h ago`;
-  return `${Math.round(sec / 86400)} d ago`;
+/** "2 minutes", "1 hour", "2 days" */
+function dur(sec: number): string {
+  if (sec % 86400 === 0) return `${sec / 86400} day${sec === 86400 ? "" : "s"}`;
+  if (sec % 3600 === 0) return `${sec / 3600} hour${sec === 3600 ? "" : "s"}`;
+  if (sec % 60 === 0) return `${sec / 60} minute${sec === 60 ? "" : "s"}`;
+  return `${sec} seconds`;
 }
-const money = (v: bigint | null | undefined) => {
-  if (v == null) return "–";
-  const [i, d] = fmt(v).split(".");
-  return `${i}<span class="dec">.${d}</span>`;
+const explorerTx = (h: string) => `${NET.explorer}/tx/${h}`;
+const txLink = (h: string, label = "View on explorer") => `<a href="${explorerTx(h)}" target="_blank" rel="noopener">${label} ↗</a>`;
+const nowSec = () => BigInt(Math.floor(Date.now() / 1000));
+const svg = (d: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const MI = {
+  how: ICON.open,
+  shield: ICON.shield,
+  key: svg('<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2"/>'),
+  plus: ICON.plus,
+  live: svg('<circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/>'),
+  demo: svg('<circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/>'),
+  ok: ICON.ok,
+  down: svg('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  repeat: ICON.repeat,
+  lock: ICON.lock,
+  leave: svg('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>'),
+  out: ICON.out,
+  link: svg('<path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>'),
+  circle: ICON.open,
 };
 
-// ---------------------------------------------------------------- top bar + wallet
+// ---------------------------------------------------------------- what the chain says now
 
-function renderTopbar() {
-  const pill = $("#wallet-pill")!;
-  if (!wallet) {
-    pill.innerHTML = `<span class="w-dot off"></span>Choose a wallet`;
+type MemberState = Awaited<ReturnType<typeof A.memberState>>[number];
+
+interface Snap {
+  bal: bigint;
+  circle?: Address;
+  info?: A.CircleInfo;
+  phase: number;
+  members: Address[];
+  state: MemberState[];
+  round: number;
+  r?: A.RoundView;
+  quote?: { payout: bigint; fee: bigint; dividend: bigint; securityHeld: bigint };
+  paid: boolean[];
+  approved: boolean[];
+  won: boolean[];
+  needed: number;
+  owed: bigint;
+  stalled: boolean;
+}
+let snap: Snap | null = null;
+let prev: Snap | null = null;
+
+async function load(): Promise<Snap | null> {
+  if (!w) return null;
+  const me = w.address;
+  const bal = await A.tokenBalance(me);
+  const s: Snap = { bal, phase: -1, members: [], state: [], round: 0, paid: [], approved: [], won: [], needed: 2, owed: 0n, stalled: false };
+  const c = saved.current;
+  if (!c) return s;
+  s.circle = c;
+  const [info, members, round, needed, stalled] = await Promise.all([
+    A.circleInfo(c),
+    A.read<Address[]>(c, "members"),
+    A.read<bigint>(c, "currentRound"),
+    A.read<number>(c, "quorumNeeded"),
+    A.read<boolean>(c, "isStalled"),
+  ]);
+  const state = await A.memberState(c, [...members], round);
+  Object.assign(s, {
+    info,
+    phase: info.phase,
+    members: [...members],
+    state,
+    round: Number(round),
+    needed: Number(needed),
+    stalled,
+    paid: state.map((m) => m.paid),
+    approved: state.map((m) => m.approved),
+    won: state.map((m) => m.won),
+  });
+  const i = meIdx(s);
+  if (i >= 0) s.owed = state[i].owed;
+  if (s.round >= 1) {
+    const [r, q] = await Promise.all([
+      A.read<A.RoundView>(c, "getRound", [round]),
+      A.read<readonly [bigint, bigint, bigint, bigint]>(c, "quotePayout", [round]).catch(() => null),
+    ]);
+    s.r = r;
+    if (q) s.quote = { payout: q[0], fee: q[1], dividend: q[2], securityHeld: q[3] };
+  }
+  return s;
+}
+
+const meIdx = (s: Snap) => s.members.findIndex((m) => w && same(m, w.address));
+const ready = (s: Snap) => !DEMO || s.bal > 0n || saved.circles.length > 0;
+const isBot = (a: string) => BOTS.includes(a.toLowerCase());
+
+// ---------------------------------------------------------------- the next step
+
+interface Next {
+  key: string;
+  kicker: string;
+  title: string;
+  body: string;
+  actions: string;
+}
+
+function nextStep(s: Snap): Next {
+  const t = nowSec();
+  const i = meIdx(s);
+  const r = s.r;
+  const size = s.info?.size ?? 3;
+  const share = s.info?.share ?? 10000n;
+  const timer = (end: bigint | number) => `<span class="timer" data-end="${end}"></span>`;
+  if (!ready(s))
+    return { key: "setup", kicker: "Almost there", title: "Get free test money", body: "Biu Wui sends your wallet 0.03 test dollars, enough for a practice circle. You never need gas.", actions: `<button class="btn-primary" data-act="setup">Get test money</button>` };
+  if (!s.circle || (s.phase >= 2 && s.owed === 0n))
+    return DEMO
+      ? { key: `start:${s.circle ?? ""}:${s.phase}`, kicker: s.phase >= 2 ? "Circle complete" : "Get started", title: s.phase >= 2 ? "Start another practice circle" : "Start a practice circle", body: "You and two friends, Ah Ming and Kitty (they're bots), each put in $0.01 a round for 3 two-minute rounds. Bid for the pot, or wait your turn.", actions: `<button class="btn-primary" data-act="start">Start a circle</button>` }
+      : { key: `start:${s.circle ?? ""}:${s.phase}`, kicker: s.phase >= 2 ? "Circle complete" : "Get started", title: s.phase >= 2 ? "Open another circle" : "Open a circle, or join one", body: "Set the name, each member's share, how many members and how long each round's bidding lasts. Then invite your friends with a link. Got an invite link? Open it and you'll join.", actions: `<button class="btn-primary" data-act="start">Open a circle</button>` };
+  const info = s.info!;
+  if (s.phase === 0) {
+    if (Number(t) > info.joinBy)
+      return { key: "unfilled", kicker: "Did not fill", title: "Joining has closed", body: "The circle didn't fill by its deadline. Cancel it and every pledge goes back in full, to each member's payee.", actions: `<button class="btn-primary" data-act="cancelUnfilled">Cancel and refund</button>` };
+    if (i < 0)
+      return { key: "notin", kicker: info.name, title: `Join · ${s.members.length} of ${size} so far`, body: `Pledge your first ${usd(share)} share to take a seat. If the circle doesn't fill, every pledge comes back.`, actions: `<button class="btn-primary" data-act="join">Join with a pledge</button>` };
+    return DEMO
+      ? { key: `forming:${s.members.length}`, kicker: "Starting", title: `Waiting for friends · ${s.members.length} of ${size}`, body: "Ah Ming and Kitty are joining. Each one signs a pledge, and our secretary submits it.", actions: `<span class="spinner"></span>` }
+      : { key: `forming:${s.members.length}`, kicker: info.name, title: `Invite friends · ${s.members.length} of ${size} joined`, body: `Round 1 starts when all ${size} members have joined. Joining closes in ${left(info.joinBy - Number(t)).replace(" left", "")}; if the circle isn't full by then, every pledge comes back.`, actions: `<button class="btn-primary" data-act="invite">Share invite link</button>${timer(info.joinBy)}` };
+  }
+  if (s.stalled)
+    return { key: "stalled", kicker: "Circle stuck", title: "This circle can't go on", body: "A round ran out of time and nobody finished it. Dissolve the circle and what's left goes back to every member's payee, in proportion to what each put in minus what each took out.", actions: `<button class="btn-primary" data-act="dissolve">Dissolve and refund</button>` };
+  if (s.phase >= 2)
+    return { key: `withdraw:${s.owed}`, kicker: PHASES[s.phase], title: `${usd(s.owed)} is waiting for you`, body: "Your security and your share of the discounts. It goes only to your payee. Our secretary sends it shortly, or send it now.", actions: `<button class="btn-primary" data-act="withdraw">Pay out ${usd(s.owed)}</button>` };
+  if (i < 0) return { key: "watch", kicker: info.name, title: "You're watching this circle", body: "You're not a member of this circle, so there's nothing for you to sign.", actions: "" };
+  if (!r) return { key: "wait", kicker: "", title: "Loading…", body: "", actions: "" };
+  const iWin = r.closed && same(r.winner, s.members[i]);
+  const round = `${DEMO ? "" : `${info.name} · `}Round ${s.round} of ${size}`;
+  const stepper = `<div class="stepper glass"><button data-bid="-1" aria-label="Less">−</button><span id="bid-val"></span><button data-bid="1" aria-label="More">+</button></div>`;
+  if (!r.closed && t <= r.bidEnd) {
+    if (!s.paid[i])
+      return { key: `pay:${s.round}`, kicker: round, title: `Pay your ${usd(share)} for this round`, body: s.won[i] ? "You already took a pot, so you keep paying your share. If you don't, the security held from your pot covers it." : "Everyone pays in first. Then whoever needs the money most can bid for it. You sign; the relayer pays the gas.", actions: `<button class="btn-primary" data-act="pay">Pay ${usd(share)}</button>${s.state[i].order.active ? "" : `<button class="btn-glass" data-act="order">Pay every round</button>`}${timer(r.bidEnd)}` };
+    if (!s.won[i] && r.bestBidder === ZERO)
+      return { key: `bid:${s.round}`, kicker: round, title: "Want the pot first?", body: "Bid the discount you'd accept. The biggest discount wins, and the discount is shared with everyone. Or just wait: with no bids, the earliest member who hasn't won takes it.", actions: `${stepper}<button class="btn-primary" data-act="bid">Bid</button>${timer(r.bidEnd)}` };
+    const lead = r.bestBidder !== ZERO ? `${nameOf(r.bestBidder)} ${nameOf(r.bestBidder) === "You" ? "lead" : "leads"} with a ${usd(r.bestDiscount)} discount.` : "";
+    const canOutbid = !s.won[i] && !same(r.bestBidder, s.members[i]);
+    return { key: `waitbid:${s.round}:${r.bestBidder}:${r.bestDiscount}`, kicker: round, title: "You're paid in. Bidding is open.", body: `${lead} The auction closes when the timer runs out.`, actions: canOutbid ? `${stepper}<button class="btn-glass" data-act="bid">Outbid</button>${timer(r.bidEnd)}` : timer(r.bidEnd) };
+  }
+  if (!r.closed)
+    return { key: `close:${s.round}`, kicker: round, title: "Bidding is over", body: DEMO ? "Anyone can close the auction now. Our secretary does it within seconds if you don't." : "Anyone can close the auction now. That picks this round's winner and locks their payee.", actions: `<button class="btn-primary" data-act="close">Close the auction</button>` };
+  if (!r.released) {
+    const who = nameOf(r.winner);
+    const potLine = `${usd(r.collected - r.discount)} after a ${usd(r.discount)} discount, to ${iWin ? "your" : `${who}'s`} locked payee`;
+    if (r.approvals < s.needed && !s.approved[i])
+      return { key: `approve:${s.round}:${r.approvals}`, kicker: round, title: iWin ? "You won the pot!" : `${who} wins this round`, body: `${potLine}. A quorum must approve the release: ${r.approvals} of ${s.needed} so far.`, actions: `<button class="btn-primary" data-act="approve">Approve release</button>` };
+    if (r.approvals >= s.needed)
+      return { key: `release:${s.round}`, kicker: round, title: iWin ? "Collect your pot" : "Ready to release", body: `${potLine}. Approved ${r.approvals} of ${s.needed}. Anyone can release it now, and it can go nowhere but the locked payee.`, actions: `<button class="btn-primary" data-act="release">Release the pot</button>` };
+    return { key: `waitrel:${s.round}:${r.approvals}`, kicker: round, title: iWin ? "Waiting for approvals" : "You approved. Waiting for the others", body: `Approved ${r.approvals} of ${s.needed}. ${potLine}.`, actions: !DEMO ? `<button class="btn-glass" data-act="invite">Remind the circle</button>` : `<span class="spinner"></span>` };
+  }
+  return { key: `between:${s.round}`, kicker: round, title: "Next round is starting", body: "", actions: `<span class="spinner"></span>` };
+}
+
+/** A payee change waiting to take effect: shown to every member, with a cancel button for its owner. */
+function payeeWarning(s: Snap): string {
+  const k = s.state.findIndex((m) => m.pending);
+  if (k < 0) return "";
+  const p = s.state[k].pending!;
+  const mine = w && same(s.members[k], w.address);
+  const who = nameOf(s.members[k]);
+  return `<p class="kicker">Payee change pending</p><h2>${mine ? "Your" : `${esc(who)}'s`} pot would go to ${esc(p.name)}</h2>
+    <p>New address <code>${short(p.address)}</code>. It takes effect in <span class="timer inline" data-end="${p.effectiveAt}"></span>, and every member sees it meanwhile. ${mine ? "If you didn't ask for this, your key may be stolen: cancel it now." : `If ${esc(who)} didn't ask for this, tell them to cancel it.`} A pot already closed keeps its payee.</p>
+    ${mine ? `<div class="next-actions"><button class="btn-primary" data-act="cancelPayee">Cancel the change</button></div>` : ""}`;
+}
+
+// ---------------------------------------------------------------- screens
+
+let tab: "home" | "activity" | "members" = "home";
+let ring: ReturnType<typeof createRing> | null = null;
+let nextKey = "";
+
+const WALLET_ART = (kind: string, id = "") =>
+  `<div class="wallet"><div class="wcard silver"></div><div class="wcard gold"><span class="brand">Biu Wui</span><span class="kind"${id ? ` id="${id}"` : ""}>${kind}</span></div><div class="pocket"><span class="stitch"></span><span class="clasp"></span></div></div>`;
+
+function renderWelcome() {
+  document.body.dataset.screen = "welcome";
+  $("screen").innerHTML = `
+    <section class="welcome">
+      <div class="wallet-art" aria-hidden="true">${WALLET_ART("標會")}</div>
+      <p class="mode-tag ${DEMO ? "demo" : "live"}">${DEMO ? "Demo mode · bots and free test money" : "Live · QDay Aevum testnet"}</p>
+      <h1>Save together.<br>Bid for the pot.</h1>
+      <ul class="points">
+        ${DEMO
+          ? `<li class="glass"><b>Pay in</b> $0.01 a round with two bot friends</li>
+        <li class="glass"><b>Bid for the pot</b>, or take it when it's your turn</li>
+        <li class="glass"><b>Just sign</b>: you never need gas, and pots only go to your locked payee</li>`
+          : `<li class="glass"><b>Open a circle</b>: you set the name, the share, the members and the bidding time</li>
+        <li class="glass"><b>Invite friends</b> with a link; everyone joins with their own wallet</li>
+        <li class="glass"><b>Every action is a signature</b>; the relayer pays the gas on the testnet</li>`}
+      </ul>
+      <button class="btn-primary block" data-act="create">${DEMO ? "Create my wallet" : "Make a test wallet"}</button>
+      ${DEMO || !hasInjected() ? "" : '<button class="btn-glass block" data-act="connect">Connect my wallet</button>'}
+      <button class="btn-glass block" data-act="how">How it works</button>
+      <p class="fine">${DEMO ? "Biu Wui hands you free test money and two bots play with you. Nothing real is at stake." : `A test wallet lives in this browser. You can also connect MetaMask or Rabby; it adds the Aevum network for you. Just looking? <button class="link inline" data-act="to-demo">Try demo mode</button>`}</p>
+    </section>`;
+}
+
+function renderShell() {
+  document.body.dataset.screen = tab;
+  for (const b of document.querySelectorAll<HTMLButtonElement>(".dock-btn")) b.classList.toggle("active", b.dataset.tab === tab);
+  if (tab === "home") {
+    $("screen").innerHTML = `
+      <section class="home">
+        <div class="col-a">
+        <div class="bal" style="grid-area:bal">
+          <p class="label">Your test dollars</p>
+          <div class="bal-row"><p class="num big" id="h-bal">$0<span class="dec">.00</span></p><span class="chip glass" id="h-gas">No gas needed</span></div>
+        </div>
+        <div class="wallet-art" style="grid-area:wallet" aria-hidden="true">${WALLET_ART("標會", "h-kind")}</div>
+        <article class="mini glass" style="grid-area:moves" id="h-moves" hidden>
+          <header><h2>Your moves</h2></header>
+          <nav class="menu" id="h-menu"></nav>
+        </article>
+        <article class="mini glass" style="grid-area:act">
+          <header><h2>Recent activity</h2><button class="link" data-tab-go="activity">See all</button></header>
+          <ul class="feed mini" id="h-feed"><li class="empty">Nothing yet.</li></ul>
+        </article>
+        </div>
+        <div class="col-b">
+        <article class="next warn glass sheen" style="grid-area:warn" id="h-warn" hidden></article>
+        <article class="next glass sheen" style="grid-area:next" id="h-next"></article>
+        <article class="ring-card glass" style="grid-area:ring">
+          <header><h2 id="h-ring-title">Your circle</h2><span class="live-dot" title="Live on QDay Aevum testnet"></span></header>
+          <div class="ring-wrap"><div id="h-ring"></div></div>
+          <p class="ring-legend"><span class="lg paid"></span>paid <span class="lg win"></span>wins the pot <span class="lg tick"></span>approved</p>
+        </article>
+        </div>
+      </section>`;
+    ring = createRing($("h-ring"));
+    nextKey = "";
+    warnKey = "";
+    movesKey = "";
+  } else if (tab === "activity") {
+    $("screen").innerHTML = `<section class="page-pane"><h1>Activity</h1><p class="sub">Every line is a transaction on the QDay Aevum testnet. Members paid no gas for any of them.</p><ul class="feed glass" id="a-feed"><li class="empty">Your circle's activity shows here.</li></ul></section>`;
+    ring = null;
+  } else {
+    $("screen").innerHTML = `<section class="page-pane"><h1>Members</h1><p class="sub">Everyone joined with a signed pledge and named a payee. A pot can only go to that payee.</p><ul class="people-list" id="m-list"><li class="empty glass">Start a circle to see its members.</li></ul><button class="btn-primary block" id="m-invite" data-act="invite" hidden>Invite friends</button></section>`;
+    ring = null;
+  }
+}
+
+let warnKey = "";
+let movesKey = "";
+
+function draw() {
+  if (!w) return renderWelcome();
+  if (document.body.dataset.screen === "welcome" || !document.querySelector(".home, .page-pane")) renderShell();
+  const s = snap;
+  $("pill-name").textContent = saved.current ? (s?.info ? s.info.name : `Circle ${Math.max(1, saved.circles.indexOf(saved.current) + 1)}`) : "No circle yet";
+  if (!s) return;
+
+  if (tab === "home") {
+    $("h-bal").innerHTML = money(s.bal);
+    $("h-gas").textContent = w.kind === "burner" ? "No gas needed" : "No gas needed · your wallet";
+    $("h-kind").textContent = PHASES[s.phase] ?? "標會";
+    const n = nextStep(s);
+    if (n.key !== nextKey) {
+      nextKey = n.key;
+      $("h-next").innerHTML = `<p class="kicker">${esc(n.kicker)}</p><h2>${esc(n.title)}</h2>${n.body ? `<p>${esc(n.body)}</p>` : ""}<div class="next-actions">${n.actions}</div>`;
+      bidVal = 0n;
+      showBid();
+      tickTimers();
+    }
+    const warn = payeeWarning(s);
+    if (warn !== warnKey) {
+      warnKey = warn;
+      $("h-warn").innerHTML = warn;
+      $("h-warn").hidden = !warn;
+      tickTimers();
+    }
+    drawMoves(s);
+    drawRing(s);
+    void drawMiniFeed();
+  } else if (tab === "activity") void drawActivity();
+  else drawMembers(s);
+}
+
+/** Moves a member can make any time: standing order, payee, leave, pay out, invite. */
+function drawMoves(s: Snap) {
+  const i = meIdx(s);
+  const el = document.getElementById("h-moves");
+  if (!el) return;
+  if (i < 0 || !s.info) {
+    el.hidden = true;
     return;
   }
-  pill.innerHTML = `<span class="w-dot"></span><span class="num">${balance == null ? "…" : fmt(balance)}</span><small>tUSD8</small><span class="w-addr">${short(wallet.address)}</span>`;
+  const me = s.state[i];
+  const row = (act: string, icon: string, text: string, sub = "") => `<button data-act="${act}"><span class="mi">${icon}</span><span class="mv">${esc(text)}${sub ? `<small>${esc(sub)}</small>` : ""}</span><i>›</i></button>`;
+  const items: string[] = [];
+  if (s.phase <= 1) {
+    items.push(me.order.active ? row("revokeOrder", MI.repeat, "Standing order on", `${me.order.used} of ${me.order.maxRounds} rounds`) : row("order", MI.repeat, "Pay every round automatically"));
+    items.push(me.pending ? row("cancelPayee", MI.lock, "Cancel payee change", `to ${me.pending.name}`) : row("payee", MI.lock, `Payee: ${me.payee.name}`, short(me.payee.address)));
+  }
+  if (s.phase === 0) items.push(row("leave", MI.leave, "Leave and get my pledge back"));
+  if (s.phase === 0 && !DEMO) items.push(row("invite", MI.link, "Invite friends"));
+  if (me.owed > 0n) items.push(row("withdraw", MI.out, `Pay out ${usd(me.owed)}`, "to your payee"));
+  items.push(`<a href="${NET.explorer}/address/${s.circle}" target="_blank" rel="noopener"><span class="mi">${MI.circle}</span>This circle on the explorer<i>↗</i></a>`);
+  const html = items.join("");
+  if (html !== movesKey) {
+    movesKey = html;
+    $("h-menu").innerHTML = html;
+  }
+  el.hidden = false;
 }
 
-async function refreshBalance() {
-  if (!wallet) return;
-  try {
-    balance = await balanceOf(wallet.address);
-  } catch { /* keep */ }
-  renderTopbar();
-  document.querySelectorAll("[data-balance]").forEach((e) => (e.innerHTML = money(balance)));
-}
+function drawRing(s: Snap) {
+  if (!ring) return;
+  const members = s.members.length ? s.members : w ? [w.address] : [];
+  const r = s.r;
+  const view = members.map((m, i) => ({
+    name: nameOf(m),
+    me: nameOf(m) === "You",
+    paid: Boolean(s.paid[i]),
+    winner: Boolean(r?.closed && same(r.winner, m) && !r.released),
+    approved: Boolean(s.approved[i]),
+    bid: r && !r.closed && same(r.bestBidder, m) ? `−${usd(r.bestDiscount)}` : null,
+  }));
+  const seats = s.info?.size ?? 3;
+  while (view.length < seats && s.phase <= 0) view.push({ name: "open seat", me: false, paid: false, winner: false, approved: false, bid: null });
+  const pot = r ? (r.released ? 0n : r.collected) : s.info ? s.info.share * BigInt(s.members.length) : 0n;
+  const label = !s.circle ? "no circle yet" : s.phase === 0 ? `${s.members.length} of ${seats} pledged` : s.phase >= 2 ? PHASES[s.phase].toLowerCase() : `round ${s.round} of ${seats}`;
+  ring.set({ pot: money(pot), label, members: view, potGlow: Boolean(r && !r.closed && s.paid.every(Boolean)) });
+  $("h-ring-title").textContent = s.circle ? (s.phase >= 2 ? `Circle ${PHASES[s.phase].toLowerCase()}` : s.phase === 0 ? "Your circle is filling up" : `Round ${s.round} of ${seats}`) : "Your circle";
 
-function chooseWallet(then?: () => void) {
-  const s = openSheet(`
-    <div class="info">
-      <div class="center">${chopSvg("標會", "hero-chop")}</div>
-      <h2 class="center">Choose how to sign</h2>
-      <p class="lead center">Members never pay gas or send transactions. You only sign; our relayer submits.</p>
-      <div class="tx-actions">
-        <button class="btn-red block-btn" data-w="burner">Try without a wallet</button>
-        <p class="fine center">A test key is made in this browser and kept here. Test money only.</p>
-        <button class="btn-glass block-btn" data-w="injected" ${hasInjected() ? "" : "disabled"}>Connect wallet (MetaMask, Rabby…)</button>
-        ${hasInjected() ? `<button class="link center" data-w="network">Add the Aevum network to my wallet</button>` : `<p class="fine center">No browser wallet found on this device.</p>`}
-      </div>
-      <p class="err" role="alert" hidden></p>
-    </div>`);
-  s.body.addEventListener("click", async (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-w]");
-    if (!b) return;
-    const err = $(".err", s.body)!;
-    try {
-      if (b.dataset.w === "network") {
-        await addAevum();
-        toast("Aevum testnet added to your wallet");
-        return;
-      }
-      wallet = b.dataset.w === "burner" ? useBurner() : await connectInjected();
-      s.close();
-      await refreshBalance();
-      toast(wallet.kind === "burner" ? "Test wallet ready" : "Wallet connected");
-      then ? then() : route();
-    } catch (x) {
-      err.textContent = explain(x);
-      err.hidden = false;
+  // Coins move when the chain changes: payments into the pot, a payout out of it.
+  if (prev && prev.circle === s.circle && r) {
+    if (prev.round === s.round) {
+      s.paid.forEach((p, i) => p && !prev!.paid[i] && ring!.coin(i, "pot"));
+    } else if (prev.r && !prev.r.released && s.round > prev.round) {
+      const wi = prev.members.findIndex((m) => same(m, prev!.r!.winner));
+      if (wi >= 0) ring.coin("pot", wi, 3);
     }
-  });
+  }
 }
 
-function walletSheet() {
-  if (!wallet) return chooseWallet();
-  const w = wallet;
-  const s = openSheet(`
-    <div class="info">
-      <h2>${w.kind === "burner" ? "Your test wallet" : "Your wallet"}</h2>
-      <dl class="rows glass">
-        <div><dt>Address</dt><dd><a href="${addrLink(w.address)}" target="_blank" rel="noopener">${short(w.address)} ↗</a></dd></div>
-        <div><dt>tUSD8</dt><dd class="num" data-balance>${money(balance)}</dd></div>
-        <div><dt>Gas token</dt><dd>not needed</dd></div>
-        <div><dt>Network</dt><dd>QDay Aevum testnet (44005)</dd></div>
-      </dl>
-      ${w.kind === "burner" ? `<p class="warn">This key lives only in this browser and is for <b>test money only</b>. Anyone using this browser can use it. Export it to keep it.</p>` : ""}
-      <div class="tx-actions">
-        <button class="btn-glass block-btn" data-k="copy">Copy address</button>
-        ${w.kind === "burner" ? `<button class="btn-glass block-btn" data-k="export">Show private key</button>` : `<button class="btn-glass block-btn" data-k="network">Add / switch to Aevum</button>`}
-        <button class="btn-glass block-btn" data-k="${w.kind === "burner" ? "reset" : "disconnect"}">${w.kind === "burner" ? "Reset: make a new test wallet" : "Disconnect"}</button>
-      </div>
-      <pre class="key" hidden></pre>
-    </div>`);
-  s.body.addEventListener("click", async (e) => {
-    const k = (e.target as HTMLElement).closest<HTMLElement>("[data-k]")?.dataset.k;
-    if (k === "copy") { await navigator.clipboard?.writeText(w.address); toast("Address copied"); }
-    if (k === "export") { const pre = $(".key", s.body)!; pre.textContent = burnerKey() ?? ""; pre.hidden = !pre.hidden; }
-    if (k === "network") await addAevum().then(() => toast("Aevum is set in your wallet")).catch((x) => toast(explain(x)));
-    if (k === "reset") {
-      if (!confirm("Make a new test wallet? The old key and its test tUSD8 are forgotten unless you exported it.")) return;
-      forgetWallet(true);
-      wallet = useBurner();
-      balance = null;
-      s.close();
-      refreshBalance();
-      route();
-    }
-    if (k === "disconnect") { forgetWallet(false); wallet = null; balance = null; s.close(); renderTopbar(); route(); }
-  });
+async function drawMiniFeed() {
+  if (!saved.current || !document.getElementById("h-feed")) return;
+  await renderFeed([{ address: saved.current, name: "your circle" }], snap?.needed ?? 2, "h-feed", 4);
 }
 
-function getFaucet(btn: HTMLButtonElement) {
-  if (!wallet) return chooseWallet();
-  const w = wallet;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Sending…`;
-  faucet(w.address)
-    .then(async ({ hash }) => {
-      btn.innerHTML = `<span class="spinner"></span> Confirming…`;
-      await publicClient.waitForTransactionReceipt({ hash, timeout: 90_000, pollingInterval: 1500 });
-      toast("0.03 test tUSD8 arrived");
-      refreshBalance();
-      btn.textContent = "Got it ✓";
+async function drawActivity() {
+  if (!saved.current) return;
+  await renderFeed([{ address: saved.current, name: "your circle" }], snap?.needed ?? 2, "a-feed", 40);
+}
+
+function drawMembers(s: Snap) {
+  if (!s.members.length) return;
+  const inv = document.getElementById("m-invite");
+  if (inv) inv.hidden = DEMO || s.phase !== 0 || meIdx(s) < 0;
+  $("m-list").innerHTML = s.members
+    .map((m, i) => {
+      const nm = nameOf(m);
+      const st = s.state[i];
+      const status = s.phase === 0 ? "pledged" : s.won[i] ? "has taken the pot" : "waiting for their turn";
+      const payee = `pays out to ${st.payee.name} · ${short(st.payee.address)}`;
+      const pend = st.pending ? ` · <b class="warn-text">changing to ${esc(st.pending.name)}</b>` : "";
+      const order = st.order.active ? " · standing order" : "";
+      return `<li class="glass"><span class="pav${nm === "You" ? " me" : ""}">${esc(nm === "You" ? "You" : nm[0])}</span><span class="pname">${esc(nm)}${isBot(m) ? " <em>bot</em>" : ""}<small>${status}${order} · ${esc(payee)}${pend}</small></span><span class="tag${s.paid[i] || s.phase === 0 ? " green" : ""}">${s.phase === 0 ? "pledged" : s.paid[i] ? "paid" : "not yet"}</span></li>`;
     })
-    .catch((e) => {
-      toast(explain(e));
+    .join("");
+}
+
+// ---------------------------------------------------------------- flows
+
+/** Wallet-style confirm sheet, then the steps of `run` ticking off, then `done`. */
+function confirmTx(o: {
+  title: string;
+  lead?: string;
+  rows: [string, string][];
+  form?: string;
+  cta: string;
+  validate?: (body: HTMLElement) => string | null;
+  run: (p: ReturnType<typeof progressIn>, body: HTMLElement) => Promise<string | void>;
+  done: (tx?: string) => string;
+  after?: () => void;
+}) {
+  const sh = openSheet(`
+    <div class="tx">
+      <p class="kicker">Confirm with your wallet</p>
+      <h2>${o.title}</h2>
+      ${o.lead ? `<p class="lead">${o.lead}</p>` : ""}
+      <dl class="rows glass">${o.rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>
+      ${o.form ?? ""}
+      <div class="tx-progress" hidden></div>
+      <div class="tx-actions"><button class="btn-primary block" data-go>${o.cta}</button></div>
+    </div>`);
+  sh.body.querySelector("[data-go]")!.addEventListener("click", async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const bad = o.validate?.(sh.body);
+    if (bad) return toast(bad, "err");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner light"></span> Working…`;
+    const pEl = sh.body.querySelector<HTMLElement>(".tx-progress")!;
+    pEl.hidden = false;
+    try {
+      const tx = await o.run(progressIn(pEl), sh.body);
+      sh.body.querySelector(".tx-actions")!.innerHTML = `<div class="done-msg">${o.done(tx ?? undefined)}</div><button class="btn-glass block" data-close>Done</button>`;
+      sh.body.querySelector("[data-close]")!.addEventListener("click", () => {
+        sh.close();
+        o.after?.();
+      });
+      await refresh();
+    } catch (err) {
       btn.disabled = false;
-      btn.textContent = "Get 0.03 test tUSD8";
-    });
-}
-
-// ---------------------------------------------------------------- home
-
-function welcome() {
-  screen.innerHTML = `
-    <section class="welcome">
-      <div class="welcome-mark">${chopSvg("標會", "hero-chop")}</div>
-      <p class="kicker">Biu Wui · a savings circle on QDay Aevum</p>
-      <h1>Bid for the pot, together.</h1>
-      <ul class="points">
-        <li class="glass">Everyone pays the same share each round. <b>Whoever needs it soonest bids a discount</b> for the pot; the discount is shared by all.</li>
-        <li class="glass"><b>You only sign</b>, like stamping a chop. You never need gas.</li>
-        <li class="glass">The pot only goes to a <b>named, locked payee</b>. Nobody can run off with it.</li>
-      </ul>
-      <button class="btn-red block-btn" data-go="burner">Try without a wallet</button>
-      <button class="btn-glass block-btn" data-go="choose">Connect a wallet</button>
-      <p class="fine">Testnet only · tUSD8 is a test stablecoin with no value · <a href="/how">How it works</a></p>
-    </section>`;
-  screen.onclick = async (e) => {
-    const g = (e.target as HTMLElement).closest<HTMLElement>("[data-go]")?.dataset.go;
-    if (g === "burner") { wallet = useBurner(); await refreshBalance(); toast("Test wallet ready"); route(); }
-    if (g === "choose") chooseWallet();
-  };
-}
-
-function circleRow(r: CircleRow) {
-  const status = r.phase === 0 ? `forming · ${r.count}/${r.size}` : r.phase === 1 ? `round ${r.round} of ${r.size}` : PHASES[r.phase].toLowerCase();
-  return `<li><a href="#circle=${r.address}">
-    <span class="c-ico ${r.phase === 1 ? "live" : ""}">${esc([...r.name.replace(/^Practice · /, "")][0] ?? "?")}</span>
-    <span class="c-name">${esc(r.name)}<small>${fmt(r.share)} tUSD8 a round · ${status}</small></span>
-    <span class="c-go">›</span></a></li>`;
-}
-
-function home() {
-  const w = wallet!;
-  screen.innerHTML = `
-    <section class="home">
-      <div class="col-a">
-        <article class="wallet-card glass sheen">
-          <p class="kicker">${w.kind === "burner" ? "Your test wallet" : "Your wallet"} · <button class="link" data-h="wallet">${short(w.address)}</button></p>
-          <p class="big num" data-balance>${money(balance)}</p>
-          <p class="muted">tUSD8 · gas needed: none</p>
-          <div class="row-btns"><button class="btn-ink" data-h="faucet">Get 0.03 test tUSD8</button><button class="btn-glass" data-h="wallet">Wallet</button></div>
-          ${w.kind === "burner" ? `<p class="fine">Test-only key kept in this browser. Export or reset it under Wallet.</p>` : ""}
-        </article>
-        <article class="practice glass strong">
-          <div class="practice-art" aria-hidden="true">${chopSvg("開會")}</div>
-          <p class="kicker red">The 2-minute demo</p>
-          <h2>Start a practice circle with Ah Ming and Kitty</h2>
-          <p>Ah Ming and Kitty are <b>friendly bots</b>. They join your circle within about 30 seconds, pay their shares, bid now and then and approve releases, so you can play whole rounds in a few minutes: pay, bid, approve, release.</p>
-          <button class="btn-red block-btn" data-h="practice">Start a practice circle</button>
-        </article>
-        <article class="glass card-pad">
-          <h3>Your own circle</h3>
-          <p class="muted">Open a circle with your rules, or join one from a link.</p>
-          <div class="row-btns"><a class="btn-glass" href="#open">Open a circle</a></div>
-          <form class="join-link" data-h="joinlink"><input name="link" placeholder="Paste a circle link or address" autocomplete="off" spellcheck="false"><button class="btn-ink" type="submit">Go</button></form>
-        </article>
-      </div>
-      <div class="col-b">
-        <article class="glass list-card"><header><h3>My circles</h3></header><ul class="clist" id="mine"><li class="empty">Looking…</li></ul></article>
-        <article class="glass list-card"><header><h3>Recent circles</h3><span class="muted small">both Biu Wui factories</span></header><ul class="clist" id="recent"><li class="empty">Loading from Aevum…</li></ul></article>
-      </div>
-    </section>`;
-  screen.onclick = (e) => {
-    const t = (e.target as HTMLElement).closest<HTMLElement>("[data-h]");
-    if (!t) return;
-    const h = t.dataset.h;
-    if (h === "wallet") walletSheet();
-    if (h === "faucet") getFaucet(t as HTMLButtonElement);
-    if (h === "practice") act.startPractice(w, (a) => (location.hash = `circle=${a}`));
-  };
-  screen.querySelector<HTMLFormElement>(".join-link")!.onsubmit = (e) => {
-    e.preventDefault();
-    const v = (e.target as HTMLFormElement).link.value as string;
-    const m = v.match(/0x[0-9a-fA-F]{40}/);
-    if (m) location.hash = `circle=${m[0]}`;
-    else toast("That doesn't contain a circle address.");
-  };
-  const load = async () => {
-    try {
-      const rows = await listCircles(w.address);
-      const mine = rows.filter((r) => r.mine);
-      $("#mine")!.innerHTML = mine.length ? mine.map(circleRow).join("") : `<li class="empty">None yet. Start a practice circle, or open one.</li>`;
-      $("#recent")!.innerHTML = rows.slice(0, 12).map(circleRow).join("") || `<li class="empty">No circles yet.</li>`;
-    } catch {
-      $("#recent")!.innerHTML = `<li class="empty">Couldn't reach Aevum. Retrying…</li>`;
+      btn.textContent = "Try again";
+      toast(friendly(err), "err", 6000);
     }
-  };
-  load();
-  const t = setInterval(() => { if (!document.hidden) { load(); refreshBalance(); } }, 15000);
-  view = { stop: () => clearInterval(t) };
+  });
+  return sh;
 }
 
-// ---------------------------------------------------------------- open a circle (form)
+const gasRow: [string, string] = ["Gas you pay", "none <span class=\"muted\">(the relayer pays)</span>"];
+const scopeRow = (c: string): [string, string] => ["Can move", `only your share, into ${esc(c)}`];
 
-function openForm() {
-  if (!wallet) return chooseWallet(() => openForm());
-  const w = wallet;
-  screen.innerHTML = `
-    <section class="narrow">
-      <a class="back" href="#">‹ Home</a>
-      <h1 class="title">Open a circle</h1>
-      <p class="muted sub">The rules are fixed once it opens. Members never pay gas; you don't either.</p>
-      <form class="glass form-card" id="open-form" novalidate>
-        <label class="field"><span>Circle name</span><input name="name" maxlength="64" placeholder="e.g. Sham Shui Po family" required></label>
-        <div class="field-row">
-          <label class="field"><span>Share a round (tUSD8)</span><input name="share" inputmode="decimal" value="0.01"></label>
-          <label class="field"><span>Members (2–50)</span><input name="size" type="number" min="2" max="50" value="5"></label>
-        </div>
-        <div class="field-row">
-          <label class="field"><span>Joining stays open (hours)</span><input name="joinH" type="number" min="0.1" step="0.5" value="24"></label>
-          <label class="field"><span>Bidding per round (minutes)</span><input name="roundM" type="number" min="1" value="60"></label>
-        </div>
-        <div class="field-row">
-          <label class="field"><span>Grace period (minutes)</span><input name="graceM" type="number" min="1" value="60"><small>Before a stalled round can be dissolved.</small></label>
-          <label class="field"><span>Payee-change delay (minutes)</span><input name="delayM" type="number" min="1" value="60"><small>How long a payee change waits, visible to all.</small></label>
-        </div>
-        <div class="field-row">
-          <label class="field"><span>Max discount (%, ≤ 40)</span><input name="disc" type="number" min="0" max="40" value="30"></label>
-          <label class="field"><span>Organiser fee (%, ≤ 5)</span><input name="fee" type="number" min="0" max="5" step="0.5" value="1"></label>
-        </div>
-        <div class="field-row">
-          <label class="field"><span>Approval quorum (%, > 50)</span><input name="quorum" type="number" min="51" max="100" value="60"></label>
-          <label class="field"><span>Winner's security (%)</span><input name="sec" type="number" min="0" max="100" value="50"><small>Held back from each pot to cover the winner's later shares.</small></label>
-        </div>
-        <p class="err" role="alert" hidden></p>
-        <button class="btn-red block-btn" type="submit">Review and sign</button>
-      </form>
-    </section>`;
-  const f = $<HTMLFormElement>("#open-form")!;
-  f.onsubmit = (e) => {
-    e.preventDefault();
-    const v = (n: string) => (f.elements.namedItem(n) as HTMLInputElement).value.trim();
-    const err = $(".err", f)!;
-    const fail = (m: string) => { err.textContent = m; err.hidden = false; };
-    const name = v("name");
-    const nb = new TextEncoder().encode(name).length;
-    if (!nb) return fail("Give the circle a name.");
-    if (nb > 64) return fail("The name can be at most 64 bytes.");
-    let share: bigint;
-    try { share = parseUnits(v("share") || "0", 6); } catch { return fail("Enter the share like 0.5."); }
-    if (share <= 0n) return fail("The share must be more than 0.");
-    const size = Number(v("size"));
-    if (!Number.isInteger(size) || size < 2 || size > 50) return fail("Members must be 2 to 50.");
-    const secs = (x: string, mult: number) => Math.round(Number(x) * mult);
-    const joinWindow = secs(v("joinH"), 3600), roundLength = secs(v("roundM"), 60), graceLength = secs(v("graceM"), 60), payeeDelay = secs(v("delayM"), 60);
-    if ([joinWindow, roundLength, graceLength, payeeDelay].some((s) => !(s >= 60) || s > 4294967295)) return fail("Every time must be at least 1 minute.");
-    const bps = (x: string) => Math.round(Number(x) * 100);
-    const maxDiscountBps = bps(v("disc")), feeBps = bps(v("fee")), quorumBps = bps(v("quorum")), securityBps = bps(v("sec"));
-    if (!(maxDiscountBps >= 0 && maxDiscountBps <= 4000)) return fail("Max discount must be 0 to 40%.");
-    if (!(feeBps >= 0 && feeBps <= 500)) return fail("The organiser fee must be 0 to 5%.");
-    if (!(quorumBps > 5000 && quorumBps <= 10000)) return fail("The quorum must be over 50% (and at most 100%).");
-    if (!(securityBps >= 0 && securityBps <= 10000)) return fail("Security must be 0 to 100%.");
-    err.hidden = true;
-    act.openCircle(w, { share, size, joinWindow, roundLength, graceLength, payeeDelay, maxDiscountBps, feeBps, quorumBps, securityBps, name }, (a) => (location.hash = `circle=${a}`));
-  };
-}
-
-// ---------------------------------------------------------------- the circle view
-
-function describe(e: Ev, nameOf: (a?: unknown) => string, c: Circle): { ic: string; text: string; cls?: string } | null {
-  const a = e.args as Record<string, never>;
-  const r = a.round != null ? `round ${a.round}` : "";
-  switch (e.name) {
-    case "CircleOpened": return { ic: "開", text: `Circle opened · ${fmt(a.share)} tUSD8 a round, ${a.size} seats` };
-    case "Joined": return { ic: "入", text: `<b>${esc(a.payeeName)}</b> joined with a signed pledge` };
-    case "Left": return { ic: "退", text: `${nameOf(a.member)} left; pledge of ${fmt(a.refund)} refunded` };
-    case "RoundStarted": return { ic: "始", text: `Round ${a.round} started` };
-    case "Paid": {
-      const how = Number(a.how);
-      if (how === 3) return null; // the pledge, already shown as Joined
-      const by = ["directly", "by signature", "by standing order", "", "from held security"][how] ?? "";
-      return { ic: "付", text: `${nameOf(a.member)} paid ${r} ${by}` };
-    }
-    case "Bid": return { ic: "標", text: `${nameOf(a.member)} bid a <b>${fmt(a.discount)}</b> discount in ${r}` };
-    case "AuctionClosed": return { ic: "結", text: `Round ${a.round} closed: <b>${nameOf(a.winner)}</b> wins at ${fmt(a.discount)} discount`, cls: "gold" };
-    case "Approved": return { ic: "准", text: `${nameOf(a.member)} approved ${r} (${a.approvals} of ${c.quorumNeeded})` };
-    case "Released": return { ic: "放", text: `Round ${a.round} pot released: <b>${fmt(a.payout)}</b> to ${nameOf(a.winner)}'s payee ${short(a.payTo)}`, cls: "gold" };
-    case "SecurityApplied": return { ic: "保", text: `${nameOf(a.member)}'s held security paid ${r}` };
-    case "StandingOrderSet": return { ic: "供", text: `${nameOf(a.member)} set a standing order: ${a.maxRounds} round(s)` };
-    case "StandingOrderRevoked": return { ic: "消", text: `${nameOf(a.member)} revoked their standing order` };
-    case "PayeeChangeRequested": return { ic: "!", text: `${nameOf(a.member)} asked to change payee to <b>${esc(a.payeeName)}</b> · ${short(a.payout)}`, cls: "warn" };
-    case "PayeeChangeCancelled": return { ic: "消", text: `${nameOf(a.member)} cancelled a payee change` };
-    case "PayeeChanged": return { ic: "收", text: `${nameOf(a.member)}'s payee is now <b>${esc(a.payeeName)}</b> · ${short(a.payout)}`, cls: "warn" };
-    case "Withdrawn": return { ic: "利", text: `${fmt(a.amount)} paid out to ${nameOf(a.member)}'s payee`, cls: "gold" };
-    case "Completed": return { ic: "完", text: "Circle completed. Held security is now paid back.", cls: "gold" };
-    case "Dissolved": return { ic: "散", text: `Circle dissolved in round ${a.round}; what's left goes back pro rata` };
-    case "Cancelled": return { ic: "退", text: "Circle didn't fill in time and was cancelled; every pledge comes back" };
-    default: return null;
+async function withStep<T>(p: ReturnType<typeof progressIn>, text: string, fn: () => Promise<T>, note?: (v: T) => string): Promise<T> {
+  const s = p.step(text);
+  try {
+    const v = await fn();
+    s.done(note ? note(v) : undefined);
+    return v;
+  } catch (e) {
+    s.fail();
+    throw e;
   }
 }
 
-function circleView(addr: Address) {
-  screen.innerHTML = `
-    <section class="cview">
-      <a class="back" href="#">‹ All circles</a>
-      <header class="c-head glass sheen" id="c-head"><div class="boot"><span class="spinner"></span> Reading the circle from Aevum…</div></header>
-      <div id="c-banners"></div>
-      <div class="c-grid">
-        <article class="glass ring-card">
-          <header><h2 id="ring-title">The circle</h2><span class="timer num" id="c-timer"></span></header>
-          <div class="ring-wrap"><div id="c-ring"></div></div>
-          <p class="ring-legend"><span class="lg paid"></span> paid this round <span class="lg win"></span> wins this round <span class="lg won">★</span> already won <span class="lg tick">✓</span> approved</p>
-        </article>
-        <div class="c-side">
-          <article class="glass moves" id="c-moves"></article>
-          <article class="glass facts" id="c-facts"></article>
-        </div>
-      </div>
-      <article class="glass list-card"><header><h3>Members and payees</h3><span class="muted small" id="c-mcount"></span></header><ul class="people" id="c-members"></ul></article>
-      <article class="glass list-card"><header><h3>Activity</h3><span class="muted small">from Aevum events</span></header><ul class="feed" id="c-feed"><li class="empty">Reading events…</li></ul></article>
-    </section>`;
-  const ring = createRing($("#c-ring")!);
-  let c: Circle | null = null;
-  let evs: Ev[] = [];
-  let lastBlock: bigint | null = null;
-  let tip = { block: 0n, ts: 0 };
-  let stopped = false;
-  let failures = 0;
+/** Sign on this device (or in the browser wallet), then the relayer submits it and pays the gas. */
+async function signAndSend(p: ReturnType<typeof progressIn>, what: string, sign: () => Promise<A.Call>) {
+  const call = await withStep(p, `Signing ${what}${w!.kind === "burner" ? " on this device" : " in your wallet"}`, sign, () => "no gas");
+  return withStep(p, "The relayer submits it and pays the gas", () => A.submit(call), (r) => txLink(r.tx, "tx"));
+}
 
-  const meOf = (cc: Circle) => cc.members.find((m) => same(m.address, wallet?.address));
-  const nameOf = (a?: unknown) => {
-    const m = c?.members.find((x) => same(x.address, String(a)));
-    if (wallet && same(String(a), wallet.address)) return "You";
-    return m ? esc(m.payeeName) : short(String(a));
-  };
-  const isBot = (m: Member) => Boolean(c?.practice && BOTS.has(m.payeeName) && !same(m.address, wallet?.address));
+/** Make sure the wallet holds `need`; top it up once from the starter faucet if not. */
+async function ensureFunds(p: ReturnType<typeof progressIn>, need: bigint) {
+  const bal = await A.tokenBalance(w!.address);
+  if (bal >= need) return;
+  await withStep(p, `Getting free test money (you have ${usd(bal)})`, () => A.faucet(w!.address), (h) => `${txLink(h, "$0.03")}`).catch((e) => {
+    throw new Error(`You need ${usd(need)} for this. ${friendly(e)}`);
+  });
+}
 
-  const refresh = () => { load(); refreshBalance(); };
+function useWallet(next: Wallet, kind: "burner" | "injected") {
+  w = next;
+  (PEOPLE as Record<string, string>)[next.address.toLowerCase()] = "You";
+  saved.wallet = kind;
+  save();
+  tab = "home";
+  renderShell();
+}
 
-  async function load() {
+/** Demo: a test wallet on this device, then free test money from the starter faucet. */
+function setupFlow() {
+  const sh = openSheet(`
+    <div class="tx">
+      <p class="kicker">Your wallet</p>
+      <h2>Set up your wallet</h2>
+      <p class="lead">Biu Wui makes a test wallet in this browser. It only ever signs; our relayer sends every transaction and pays the gas, so you never need a gas token.</p>
+      <div class="tx-progress"></div>
+      <div class="tx-actions"><button class="btn-primary block" data-go>${w ? "Continue" : "Create my wallet"}</button></div>
+    </div>`);
+  const go = sh.body.querySelector<HTMLButtonElement>("[data-go]")!;
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    go.innerHTML = `<span class="spinner light"></span> Setting up…`;
+    const p = progressIn(sh.body.querySelector(".tx-progress")!);
     try {
-      c = await loadCircle(addr);
-      failures = 0;
-      render();
+      if (!w) {
+        await withStep(p, "Making your wallet on this device", async () => {
+          saved.pk = newKey();
+          useWallet(burner(saved.pk), "burner");
+        }, () => short(w!.address));
+      } else p.step("Your wallet is on this device").done();
+      if ((await A.tokenBalance(w!.address)) === 0n) {
+        await withStep(p, "Getting free test money", () => A.faucet(w!.address), (h) => txLink(h, "$0.03"));
+      } else p.step("Test money is in your wallet").done();
+      sh.body.querySelector(".tx-actions")!.innerHTML = `<div class="done-msg">You're ready. Next: start a practice circle.</div><button class="btn-primary block" data-next>Start a circle</button>`;
+      sh.body.querySelector("[data-next]")!.addEventListener("click", () => {
+        sh.close();
+        startFlow();
+      });
+      await refresh();
     } catch (e) {
-      failures++;
-      if (!c) {
-        $("#c-head")!.innerHTML = `<div class="boot">${failures > 2 ? `This doesn't look like a Biu Wui circle, or Aevum isn't answering. <a href="#">Back</a>` : `<span class="spinner"></span> Retrying… ${esc(explain(e))}`}</div>`;
-      }
+      go.disabled = false;
+      go.textContent = "Try again";
+      toast(friendly(e), "err", 6000);
+      await refresh();
     }
-  }
+  });
+  if (!w) go.click();
+}
 
-  async function loadEvents() {
+/** Live: make a test wallet here. */
+async function createWalletLive() {
+  saved.pk = newKey();
+  useWallet(burner(saved.pk), "burner");
+  await refresh();
+  toast("Your test wallet is ready", "ok");
+  if (pendingJoin) void joinFlow(pendingJoin);
+}
+
+async function connectFlow() {
+  try {
+    const x = await injected(true);
+    if (!x) return toast("Your wallet didn't share an address.", "err");
+    useWallet(x, "injected");
+    await refresh();
+    toast("Wallet connected · Aevum added", "ok");
+    if (pendingJoin) void joinFlow(pendingJoin);
+  } catch (e) {
+    toast(friendly(e), "err", 6000);
+  }
+}
+
+// ---------------------------------------------------------------- invites (live)
+
+const inviteUrl = (c: string) => `${location.origin}/?join=${c}`;
+
+function inviteSheet() {
+  const c = saved.current;
+  const info = snap?.info;
+  if (!c || !info) return;
+  const url = inviteUrl(c);
+  const sh = openSheet(`
+    <div class="tx">
+      <p class="kicker">Invite friends</p>
+      <h2>${esc(info.name)}</h2>
+      <p class="lead">${snap!.members.length} of ${info.size} have joined. Send this link; your friend makes a wallet or connects theirs, and joins with a signed pledge. No gas.</p>
+      <div class="addr-box glass"><span class="kicker">Invite link</span><code>${esc(url)}</code></div>
+      <dl class="rows glass"><div><dt>Each pays</dt><dd>${usd(info.share)} a round</dd></div><div><dt>Members</dt><dd>${info.size}</dd></div><div><dt>Pot each round</dt><dd>${usd(info.share * BigInt(info.size))}</dd></div><div><dt>Joining closes</dt><dd>${new Date(info.joinBy * 1000).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</dd></div></dl>
+      <div class="tx-actions">
+        ${"share" in navigator ? '<button class="btn-primary block" data-share>Share link</button>' : ""}
+        <button class="btn-glass block" data-copy>Copy link</button>
+      </div>
+    </div>`);
+  const text = `Join my savings circle "${info.name}" on Biu Wui: ${usd(info.share)} a round, ${info.size} members. Bid for the pot; nobody can run off with it.`;
+  sh.body.querySelector("[data-share]")?.addEventListener("click", () => void navigator.share?.({ title: "Biu Wui", text, url }).catch(() => {}));
+  sh.body.querySelector("[data-copy]")!.addEventListener("click", async () => {
+    await navigator.clipboard?.writeText(url);
+    toast("Invite link copied", "ok", 1800);
+  });
+}
+
+const payeeForm = (name: string, addr: string, delay?: number) => `
+  <label class="fl">Payee name<input class="field" id="f-name" maxlength="32" value="${esc(name)}" autocomplete="nickname" placeholder="e.g. Mei"></label>
+  <label class="fl">Payee address<input class="field mono" id="f-addr" value="${esc(addr)}" spellcheck="false" autocomplete="off"></label>
+  <p class="fine">Your pot, dividends and refunds can only go here. Members see the name before they approve.${delay ? ` A later change waits ${dur(delay)}, visible to everyone.` : ""}</p>`;
+const val = (body: HTMLElement, id: string) => (body.querySelector<HTMLInputElement>(`#${id}`)?.value ?? "").trim();
+const bytes = (s: string) => new TextEncoder().encode(s).length;
+const checkPayee = (body: HTMLElement) => {
+  const n = val(body, "f-name");
+  if (!n) return "Give your payee a name.";
+  if (bytes(n) > 32) return "Names can be at most 32 bytes.";
+  if (!/^0x[0-9a-fA-F]{40}$/.test(val(body, "f-addr"))) return "That payee address doesn't look right.";
+  return null;
+};
+
+/** Join a circle (from an invite link or the home screen): a signed pledge of one share. */
+async function joinFlow(c: string) {
+  pendingJoin = c;
+  if (!(await A.isBiuWuiCircle(c).catch(() => false))) {
+    pendingJoin = null;
+    history.replaceState(null, "", location.pathname);
+    return toast("That invite link doesn't point to a Biu Wui circle.", "err", 6000);
+  }
+  if (!w) {
+    toast("First make a test wallet or connect yours, then you'll join the circle.", "info", 5000);
+    return;
+  }
+  const info = await A.circleInfo(c as Address);
+  const members = await A.read<Address[]>(c as Address, "members");
+  const already = members.some((m) => same(m, w!.address));
+  const done = () => {
+    pendingJoin = null;
+    history.replaceState(null, "", location.pathname);
+    saved.circles = [...saved.circles.filter((x) => x !== c), c as Address];
+    saved.current = c as Address;
+    save();
+    prev = null;
+  };
+  if (already) {
+    done();
+    toast(`You're already in ${info.name}`, "ok");
+    return refresh();
+  }
+  if (info.phase !== 0 || info.memberCount >= info.size || Date.now() / 1000 > info.joinBy) {
+    done();
+    await refresh();
+    return toast(`${info.name} is full or has already started.`, "err", 6000);
+  }
+  confirmTx({
+    title: `Join ${esc(info.name)}`,
+    lead: `Opened by ${short(info.organiser)}. ${info.memberCount} of ${info.size} have joined. Joining is a pledge: you pay your first share now, and if the circle doesn't fill, every pledge comes back in full.`,
+    rows: [
+      ["You pay", `${usd(info.share)} a round`],
+      ["For", `${info.size} rounds · ${usd(info.share * BigInt(info.size))} in total`],
+      ["Bidding each round", dur(info.roundLength)],
+      ["Discount cap", `${info.maxDiscountBps / 100}% of the pot`],
+      ["Organiser fee", `${info.feeBps / 100}% of the pot, from discounts only`],
+      ["Your test dollars", money(snap?.bal ?? 0n)],
+      gasRow,
+    ],
+    form: payeeForm(saved.name ?? "", w.address, info.payeeDelay),
+    cta: "Sign the pledge",
+    validate: checkPayee,
+    run: async (p, body) => {
+      const name = val(body, "f-name");
+      saved.name = name;
+      save();
+      await ensureFunds(p, info.share);
+      const r = await signAndSend(p, `your ${usd(info.share)} pledge`, () => A.signJoin(w!, c as Address, info.share, name, val(body, "f-addr") as Address));
+      done();
+      return r.tx;
+    },
+    done: () => `You're in ${esc(info.name)}.`,
+  });
+}
+
+const CADENCES: [number, string, string][] = [
+  [120, "2 min", "test"],
+  [600, "10 min", "test"],
+  [3600, "1 hour", ""],
+  [86400, "1 day", ""],
+  [604800, "1 week", ""],
+];
+const SHARES: [number, string][] = [[0.01, "$0.01"], [0.1, "$0.10"], [1, "$1"], [10, "$10"]];
+
+/** Live: the organiser fixes the terms (name, share, members, bidding time, discount cap, fee), joins, then invites. */
+function createFlow() {
+  const f = { name: "Family hui", share: 0.01, size: 4, round: 600, cap: 3000, fee: 100 };
+  const seg = (key: string, opts: [number, string, string?][], cur: number) =>
+    `<div class="seg glass" data-seg="${key}">${opts.map(([v, l, sub]) => `<button type="button" data-v="${v}" class="${v === cur ? "on" : ""}">${l}${sub ? `<small>${sub}</small>` : ""}</button>`).join("")}</div>`;
+  const sh = openSheet(`
+    <div class="tx create">
+      <p class="kicker">New circle · QDay Aevum testnet</p>
+      <h2>Open a circle</h2>
+      <label class="fl">Name<input class="field" id="c-name" maxlength="40" value="${f.name}" autocomplete="off"></label>
+      <label class="fl">Each member pays, per round
+        <div class="amount glass"><span>$</span><input id="c-share" type="number" inputmode="decimal" min="0.01" max="1000" step="0.01" value="${f.share}"><span class="unit">tUSD8</span></div>
+      </label>
+      ${seg("share", SHARES, f.share)}
+      <div class="fl">Members
+        <div class="stepper glass big"><button type="button" data-size="-1" aria-label="Fewer">−</button><span id="c-size">${f.size}</span><button type="button" data-size="1" aria-label="More">+</button></div>
+      </div>
+      <div class="fl">Bidding time each round${seg("round", CADENCES, f.round)}</div>
+      <div class="fl">Biggest discount a bidder can take${seg("cap", [[1000, "10%"], [2000, "20%"], [3000, "30%"], [4000, "40%"]], f.cap)}</div>
+      <div class="fl">Organiser fee, taken only from discounts${seg("fee", [[0, "None"], [100, "1%"], [200, "2%"], [500, "5%"]], f.fee)}</div>
+      ${payeeForm(saved.name ?? "", w!.address)}
+      <div class="summary glass" id="c-sum"></div>
+      <div class="tx-progress" hidden></div>
+      <div class="tx-actions"><button class="btn-primary block" data-go>Sign and open</button></div>
+    </div>`);
+  const q = (sel: string) => sh.body.querySelector<HTMLElement>(sel)!;
+  const fmt = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+  const sum = () => {
+    const pot = f.share * f.size;
+    q("#c-sum").innerHTML = `
+      <div><b>${fmt(pot)}</b><span>pot each round</span></div>
+      <div><b>${fmt(pot)}</b><span>each member pays in total</span></div>
+      <div><b>${f.size} rounds</b><span>bidding ${dur(f.round)} each</span></div>
+      <p>Everyone takes the pot once. A bidder still gets at least ${fmt(pot * (1 - f.cap / 10000))}. Joining stays open for ${dur(joinWindow(f.round))}; a payee change waits ${dur(payeeDelay(f.round))}. You have ${usd(snap!.bal)}.</p>`;
+  };
+  sh.body.addEventListener("click", (e) => {
+    const t = e.target as HTMLElement;
+    const b = t.closest<HTMLElement>("[data-v]");
+    const g = b?.closest<HTMLElement>("[data-seg]");
+    if (b && g) {
+      for (const x of g.querySelectorAll("button")) x.classList.toggle("on", x === b);
+      const v = Number(b.dataset.v);
+      if (g.dataset.seg === "share") {
+        f.share = v;
+        sh.body.querySelector<HTMLInputElement>("#c-share")!.value = String(v);
+      } else (f as Record<string, unknown>)[g.dataset.seg!] = v;
+      sum();
+    }
+    const z = t.closest<HTMLElement>("[data-size]");
+    if (z) {
+      f.size = Math.min(12, Math.max(2, f.size + Number(z.dataset.size)));
+      q("#c-size").textContent = String(f.size);
+      sum();
+    }
+  });
+  sh.body.querySelector<HTMLInputElement>("#c-share")!.addEventListener("input", (e) => {
+    f.share = Math.max(0, Number((e.target as HTMLInputElement).value) || 0);
+    for (const x of sh.body.querySelectorAll('[data-seg="share"] button')) x.classList.toggle("on", Number((x as HTMLElement).dataset.v) === f.share);
+    sum();
+  });
+  sum();
+  const go = q("[data-go]") as HTMLButtonElement;
+  go.addEventListener("click", async () => {
+    f.name = val(sh.body, "c-name");
+    if (!f.name) return toast("Give your circle a name.", "err");
+    if (/^Practice · /.test(f.name)) return toast("Pick another name; that one is for practice circles.", "err");
+    if (bytes(f.name) > 64) return toast("Circle names can be at most 64 bytes.", "err");
+    if (!(f.share >= 0.000001 && f.share <= 1000)) return toast("Each member's share must be between $0.000001 and $1,000.", "err");
+    const bad = checkPayee(sh.body);
+    if (bad) return toast(bad, "err");
+    const payee = val(sh.body, "f-name");
+    const payout = val(sh.body, "f-addr") as Address;
+    saved.name = payee;
+    save();
+    go.disabled = true;
+    go.innerHTML = `<span class="spinner light"></span> Opening…`;
+    const pEl = q(".tx-progress");
+    pEl.hidden = false;
+    const p = progressIn(pEl);
     try {
-      const b = await publicClient.getBlock();
-      tip = { block: b.number, ts: Number(b.timestamp) };
-      const fresh = await circleEvents(addr, b.number, lastBlock == null ? null : lastBlock + 1n);
-      evs = lastBlock == null ? fresh : [...evs, ...fresh.filter((x) => !evs.some((y) => y.tx === x.tx && y.logIndex === x.logIndex))];
-      lastBlock = b.number;
-      renderFeed();
-    } catch {
-      if (lastBlock == null) $("#c-feed")!.innerHTML = `<li class="empty">Couldn't read events yet. Retrying…</li>`;
+      const share = BigInt(Math.round(f.share * 1e6));
+      const params: A.OpenParams = {
+        share,
+        size: f.size,
+        joinWindow: joinWindow(f.round),
+        roundLength: f.round,
+        graceLength: Math.min(Math.max(Math.round(f.round / 4), 900), 3 * 86400),
+        payeeDelay: payeeDelay(f.round),
+        maxDiscountBps: f.cap,
+        feeBps: f.fee,
+        quorumBps: 5001,
+        securityBps: 5000,
+        name: f.name,
+      };
+      await ensureFunds(p, share);
+      const made = await signAndSend(p, `the rules of "${f.name}"`, () => A.signOpen(w!, params));
+      const circle = A.openedCircle(made.rc);
+      saved.circles = [...saved.circles.filter((c) => c !== circle), circle];
+      saved.current = circle;
+      save();
+      await signAndSend(p, `your ${usd(share)} pledge as the first member`, () => A.signJoin(w!, circle, share, payee, payout));
+      prev = null;
+      await refresh();
+      sh.close();
+      inviteSheet();
+    } catch (e) {
+      go.disabled = false;
+      go.textContent = "Try again";
+      toast(friendly(e), "err", 6000);
     }
-  }
+  });
+}
+/** Joining stays open a day (a week for weekly rounds). */
+const joinWindow = (round: number) => (round >= 604800 ? 604800 : 86400);
+/** A payee change waits as long as one round's bidding, at least 5 minutes and at most 2 days. */
+const payeeDelay = (round: number) => Math.min(Math.max(round, 300), 172800);
 
-  function renderFeed() {
-    if (!c) return;
-    const items = evs.map((e) => ({ e, d: describe(e, nameOf, c!) })).filter((x) => x.d).reverse().slice(0, 60);
-    $("#c-feed")!.innerHTML = items.length
-      ? items.map(({ e, d }) => `<li class="${d!.cls ?? ""}"><span class="ic cjk">${d!.ic}</span><span class="what">${d!.text}</span><a class="when" href="${txLink(e.tx)}" target="_blank" rel="noopener">${tip.block ? ago(Number(tip.block - e.block) * BLOCK_SEC) : ""} ↗</a></li>`).join("")
-      : `<li class="empty">No activity yet.</li>`;
-  }
-
-  function tick() {
-    if (!c || stopped) return;
-    const t = $("#c-timer");
-    const rd = c.rd;
-    let progress: number | null = null;
-    if (c.phase === 0) {
-      const left = Number(c.joinBy) - now();
-      t && (t.textContent = left > 0 ? `joining closes in ${clock(left)}` : "joining closed");
-    } else if (c.phase === 1 && rd) {
-      const left = Number(rd.bidEnd) - now();
-      progress = Math.min(1, Math.max(0, 1 - left / Math.max(1, c.roundLength)));
-      t && (t.textContent = rd.closed ? (rd.released ? "released" : "waiting for approvals") : left > 0 ? `${clock(left)} left to pay and bid` : "bidding over");
-    } else t && (t.textContent = "");
-    drawRing(progress);
-    // a deadline just passed: buttons change
-    if (rd && !rd.closed && c.phase === 1 && Number(rd.bidEnd) - now() === -2) render();
-  }
-
-  function drawRing(progress: number | null) {
-    if (!c) return;
-    const rd = c.rd;
-    const ms: RingMember[] = c.members.map((m) => ({
-      name: m.payeeName,
-      me: same(m.address, wallet?.address),
-      bot: isBot(m),
-      paid: c!.phase <= 1 && m.paid,
-      won: m.won && !(c!.phase === 1 && rd?.closed && !rd.released && same(rd.winner, m.address)),
-      winner: Boolean(c!.phase === 1 && rd?.closed && !rd.released && same(rd.winner, m.address)),
-      approved: Boolean(c!.phase === 1 && rd?.closed && !rd.released && m.approved),
-      bid: rd && !rd.closed && same(rd.bestBidder, m.address) && rd.bestDiscount > 0n ? `−${fmt(rd.bestDiscount)}` : null,
-    }));
-    for (let i = ms.length; i < c.size; i++) ms.push({ name: "", empty: true });
-    const potV = c.phase === 0 ? c.share * BigInt(c.members.length) : c.phase === 1 && rd ? rd.collected : 0n;
-    const label = c.phase === 0 ? `pledged · ${c.members.length} of ${c.size}` : c.phase === 1 ? `round ${c.round} of ${c.size}` : PHASES[c.phase].toLowerCase();
-    ring.set({ pot: `${fmt(potV)}<small style="font-size:.5em;opacity:.8"> tUSD8</small>`, label, members: ms, potGlow: Boolean(rd?.closed && !rd.released), progress });
-  }
-
-  function render() {
-    if (!c) return;
-    const me = meOf(c);
-    const rd = c.rd;
-    const phase = PHASES[c.phase];
-    document.title = `${c.name} · Biu Wui 標會`;
-    $("#c-head")!.innerHTML = `
-      <div class="c-title"><span class="phase p${c.phase}">${phase}</span><h1>${esc(c.name)}</h1>
-        <p class="muted">${fmt(c.share)} tUSD8 a round · ${c.size} seats · pot ${fmt(c.chit)} tUSD8 · ${c.phase === 1 ? `round ${c.round} of ${c.size}` : `${c.members.length} joined`}</p></div>
-      <div class="c-head-btns"><button class="btn-glass" data-a="share">Share link</button><a class="btn-glass" href="${addrLink(c.address)}" target="_blank" rel="noopener">Explorer ↗</a></div>`;
-
-    // banners: every pending payee change, loudly; practice bots; read-only
-    const b: string[] = [];
-    for (const m of c.members.filter((x) => x.pending)) {
-      const mine = same(m.address, wallet?.address);
-      const left = Number(m.pending!.effectiveAt) - now();
-      b.push(`<div class="banner warn"><span class="b-ic cjk">!</span><div><b>${mine ? "Your" : `${esc(m.payeeName)}'s`} payee is changing</b> to “${esc(m.pending!.name)}” · ${short(m.pending!.payout)} ${left > 0 ? `in ${clock(left)}` : "(ready to take effect)"}.
-        ${mine ? "If you didn't ask for this, cancel it now." : "If this looks wrong, tell them: they can cancel it with one signature."}</div>${mine ? `<button class="btn-ink" data-a="cancelPayee">Cancel it</button>` : ""}</div>`);
-    }
-    if (c.practice && c.phase === 0) b.push(`<div class="banner"><span class="b-ic">🤖</span><div><b>Ah Ming and Kitty are friendly bots.</b> They take the other seats within about 30 seconds, then pay, bid now and then, and approve, so you can play full rounds.</div></div>`);
-    else if (c.practice && c.phase === 1) b.push(`<div class="banner"><span class="b-ic">🤖</span><div>Practice circle: <b>Ah Ming and Kitty are friendly bots.</b> Our secretary bot also closes and releases rounds on time. Try bidding to win the pot early.</div></div>`);
-    if (!wallet) b.push(`<div class="banner"><span class="b-ic cjk">印</span><div>You're viewing this circle. <b>Choose a wallet</b> to join or act (no gas needed).</div><button class="btn-red" data-a="wallet">Choose</button></div>`);
-    $("#c-banners")!.innerHTML = b.join("");
-
-    // your moves
-    const moves: string[] = [];
-    const t = now();
-    const btn = (a: string, label: string, sub: string, cls = "btn-red") => `<button class="move ${cls}" data-a="${a}"><span>${label}</span><small>${sub}</small></button>`;
-    let headline = "";
-    if (c.phase === 0) {
-      if (me) {
-        headline = `You're in. Waiting for ${c.size - c.members.length} more to join.`;
-        moves.push(btn("leave", "Leave and get my pledge back", "Only before the circle is full", "btn-glass"));
-      } else if (t <= Number(c.joinBy) && c.members.length < c.size) {
-        headline = "Join this circle";
-        moves.push(btn("join", `Join with a ${fmt(c.share)} pledge`, "Refunded if the circle doesn't fill"));
-      } else headline = "Joining is closed.";
-      if (t > Number(c.joinBy)) moves.push(btn("cancelUnfilled", "Cancel the unfilled circle", "Anyone can · every pledge comes back", "btn-ink"));
-    } else if (c.phase === 1 && rd) {
-      const open = !rd.closed && t <= Number(rd.bidEnd);
-      if (open) {
-        if (me && !me.paid) moves.push(btn("pay", `Pay this round · ${fmt(c.share)}`, "One signature, no gas"));
-        if (me && me.paid && !me.won) moves.push(btn("bid", "Bid a discount", rd.bestDiscount > 0n ? `Best so far ${fmt(rd.bestDiscount)}` : "No bids yet"));
-        headline = me ? (me.paid ? (me.won ? "You've paid. You already won a pot, so you can't bid." : "You've paid. Bid if you want the pot now.") : "Pay your share for this round.") : "Bidding is open.";
-      } else if (!rd.closed) {
-        headline = "Bidding is over.";
-        moves.push(btn("close", "Close the auction", "Anyone can · the highest bid wins", "btn-ink"));
-      } else if (!rd.released) {
-        const payee = payeeAtClose(c);
-        headline = `Round ${c.round}: pot goes to ${esc(payee)} · ${short(rd.payTo)}, fixed at close.`;
-        if (me && !me.approved) moves.push(btn("approve", "Approve release", `Pot goes to ${esc(payee)} · ${short(rd.payTo)}`));
-        if (rd.approvals >= c.quorumNeeded) moves.push(btn("release", "Release the pot", `${rd.approvals} of ${c.quorumNeeded} approved · anyone can`, "btn-ink"));
-        else if (me?.approved) headline += ` You approved; ${c.quorumNeeded - rd.approvals} more needed.`;
+function startFlow() {
+  if (!w) return DEMO ? setupFlow() : undefined;
+  if (!snap || !ready(snap)) return setupFlow();
+  if (!DEMO) return createFlow();
+  const sh = openSheet(`
+    <div class="tx">
+      <p class="kicker">New circle</p>
+      <h2>Start a practice circle</h2>
+      <div class="trio"><span class="pav me">You</span><span class="pav">A</span><span class="pav">K</span></div>
+      <p class="lead center">You, Ah Ming and Kitty. Ah Ming and Kitty are bots run by our circle secretary, so you don't have to wait for friends.</p>
+      <dl class="rows glass">
+        <div><dt>Each round</dt><dd>$0.01 from everyone · $0.03 pot</dd></div>
+        <div><dt>Rounds</dt><dd>3, two minutes of bidding each</dd></div>
+        <div><dt>You need</dt><dd>$0.03 in total · you have ${money(snap.bal)}</dd></div>
+        <div><dt>Organiser fee</dt><dd>1%, taken only from discounts</dd></div>
+        <div><dt>Gas you pay</dt><dd>none</dd></div>
+      </dl>
+      <label class="fl">Your name in the circle<input class="field" id="f-name" maxlength="32" value="${esc(saved.name ?? "")}" autocomplete="nickname" placeholder="e.g. Mei"></label>
+      <div class="tx-progress" hidden></div>
+      <div class="tx-actions"><button class="btn-primary block" data-go>Start the circle</button></div>
+    </div>`);
+  const go = sh.body.querySelector<HTMLButtonElement>("[data-go]")!;
+  let circle: Address | null = null;
+  go.addEventListener("click", async () => {
+    const name = val(sh.body, "f-name");
+    if (!name) return toast("Tell the circle your name.", "err");
+    if (bytes(name) > 32) return toast("Names can be at most 32 bytes.", "err");
+    saved.name = name;
+    save();
+    go.disabled = true;
+    go.innerHTML = `<span class="spinner light"></span> Starting…`;
+    const pEl = sh.body.querySelector<HTMLElement>(".tx-progress")!;
+    pEl.hidden = false;
+    const p = progressIn(pEl);
+    try {
+      const params = A.practiceParams(name);
+      await ensureFunds(p, params.share);
+      if (!circle) {
+        const made = await signAndSend(p, "the circle's rules", () => A.signOpen(w!, params));
+        circle = A.openedCircle(made.rc);
+        saved.circles = [...saved.circles.filter((c) => c !== circle), circle];
+        saved.current = circle;
+        save();
       }
-      if (c.stalled) moves.push(btn("dissolve", "Dissolve the stalled circle", "Anyone can · what's left goes back pro rata", "btn-ink"));
-      if (me) {
-        moves.push(me.order.active
-          ? btn("revoke", "Revoke standing order", `${me.order.used} of ${me.order.maxRounds} rounds used`, "btn-glass")
-          : btn("order", "Set a standing order", "Never miss a round · capped, revocable", "btn-glass"));
-      }
-    } else {
-      headline = c.phase === 2 ? "This circle is completed." : c.phase === 3 ? "This circle was dissolved." : "This circle was cancelled.";
+      await signAndSend(p, "your $0.01 pledge", () => A.signJoin(w!, circle!, params.share, name, w!.address));
+      p.step("Ah Ming and Kitty are on their way").done();
+      sh.body.querySelector(".tx-actions")!.innerHTML = `<div class="done-msg">Your circle is open. Round 1 starts when both friends have joined, in about half a minute.</div><button class="btn-glass block" data-close>Back to my circle</button>`;
+      sh.body.querySelector("[data-close]")!.addEventListener("click", () => sh.close());
+      prev = null;
+      await refresh();
+    } catch (e) {
+      go.disabled = false;
+      go.textContent = "Try again";
+      toast(friendly(e), "err", 6000);
     }
-    if (me && c.phase <= 1) moves.push(me.pending ? btn("cancelPayee", "Cancel pending payee change", `Waiting: ${esc(me.pending.name)}`, "btn-glass") : btn("payee", "Change payee", `Waits ${act.dur(c.payeeDelay)}, visible to all`, "btn-glass"));
-    if (me && me.withdrawable > 0n) moves.unshift(btn("withdraw", `Withdraw ${fmt(me.withdrawable)} tUSD8`, `To your payee ${esc(me.payeeName)}`));
-    if (!me && c.phase === 1) headline = headline || "You're not a member of this circle.";
-    $("#c-moves")!.innerHTML = `<p class="kicker red">${me ? "Your move" : "This round"}</p><h2>${headline || "Nothing to do right now."}</h2><div class="move-list">${moves.join("")}</div>`;
+  });
+}
 
-    // facts
-    const f: [string, string][] = [];
-    if (rd && c.phase === 1) {
-      f.push(["Collected this round", `${fmt(rd.collected)} tUSD8 · ${c.members.filter((m) => m.paid).length} of ${c.size} paid`]);
-      f.push(["Best bid", rd.bestDiscount > 0n ? `${fmt(rd.bestDiscount)} by ${nameOf(rd.bestBidder)}` : "none yet"]);
-      if (rd.closed) {
-        f.push(["Winner", `${nameOf(rd.winner)} at ${fmt(rd.discount)} discount`]);
-        f.push(["Approvals", `${rd.approvals} of ${c.quorumNeeded} needed`]);
-        if (c.quote) f.push(["Release pays", `${fmt(c.quote.payout)} now · ${fmt(c.quote.securityHeld)} held · ${fmt(c.quote.dividend)} dividend`]);
-      }
-    }
-    f.push(["Max discount · fee", `${c.maxDiscountBps / 100}% · ${c.feeBps / 100}%`]);
-    f.push(["Bidding per round · grace", `${act.dur(c.roundLength)} · ${act.dur(c.graceLength)}`]);
-    f.push(["Payee-change delay", act.dur(c.payeeDelay)]);
-    f.push(["Organiser", `${short(c.organiser)}${same(c.organiser, wallet?.address) ? " (you)" : ""}`]);
-    $("#c-facts")!.innerHTML = `<dl class="rows">${f.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
+let bidVal = 0n;
+let pendingJoin: string | null = null;
+const potOf = () => (snap?.info ? snap.info.share * BigInt(snap.info.size) : 30000n);
+const shareOf = () => snap?.info?.share ?? 10000n;
+/** Bids move in steps of 1% of the pot, up to the circle's discount cap. */
+const bidStep = () => (potOf() / 100n > 0n ? potOf() / 100n : 1n);
+const bidMax = () => snap?.info?.maxDiscount ?? (potOf() * 3n) / 10n;
+const bidFloor = () => (snap?.r && snap.r.bestBidder !== ZERO ? snap.r.bestDiscount + bidStep() : bidStep() * 4n);
+const clamp = (v: bigint, lo: bigint, hi: bigint) => (v < lo ? lo : v > hi ? hi : v);
+function showBid() {
+  if (!bidVal || bidVal < bidFloor()) bidVal = clamp(bidFloor(), 0n, bidMax());
+  const v = document.getElementById("bid-val");
+  if (v) v.textContent = usd(bidVal);
+}
 
-    // members
-    $("#c-mcount")!.textContent = `${c.members.length} of ${c.size}`;
-    $("#c-members")!.innerHTML = c.members.length
-      ? c.members.map((m) => {
-          const tags = [
-            c!.phase <= 1 && m.paid ? `<span class="tag gold">paid</span>` : "",
-            m.won ? `<span class="tag red">won</span>` : "",
-            m.order.active ? `<span class="tag">standing order ${m.order.used}/${m.order.maxRounds}</span>` : "",
-            isBot(m) ? `<span class="tag soft">bot</span>` : "",
-            m.pending ? `<span class="tag warn">payee changing</span>` : "",
-          ].join("");
-          const mine = same(m.address, wallet?.address);
-          const payout = m.withdrawable > 0n && !mine ? `<button class="link" data-a="withdrawFor" data-m="${m.address}">pay out ${fmt(m.withdrawable)}</button>` : "";
-          return `<li><span class="pav ${mine ? "me" : isBot(m) ? "bot" : ""}">${mine ? "You" : esc([...m.payeeName][0] ?? "?")}</span>
-            <span class="pname">${esc(m.payeeName)}${mine ? " <em>you</em>" : ""}<small>payee ${short(m.payee)}${same(m.payee, m.address) ? "" : ` · member ${short(m.address)}`}</small><span class="tags">${tags}</span></span>${payout}</li>`;
-        }).join("")
-      : `<li class="empty">Nobody yet.</li>`;
-    tick();
-    renderFeed();
-  }
+const circleName = () => esc(snap?.info?.name && !DEMO ? snap.info.name : "your circle");
+const winnerPayee = () => {
+  const s = snap!;
+  const r = s.r!;
+  const k = s.members.findIndex((m) => same(m, r.winner));
+  const st = k >= 0 ? s.state[k] : null;
+  const name = st && same(st.payee.address, r.payTo) ? st.payee.name : "the locked payee";
+  return `<b>${esc(name)}</b> · <code>${short(r.payTo)}</code>`;
+};
 
-  function payeeAtClose(cc: Circle) {
-    const rd = cc.rd!;
-    const w = cc.members.find((m) => same(m.address, rd.winner));
-    if (w && same(w.payee, rd.payTo)) return w.payeeName;
-    // the payee changed after close: find the name it had then
-    const ev = [...evs].reverse().find((e) => (e.name === "PayeeChanged" || e.name === "Joined") && same(String(e.args.member), rd.winner) && same(String(e.args.payout), rd.payTo));
-    return ev ? String(ev.args.payeeName) : `${w?.payeeName ?? "winner"}'s payee at close`;
-  }
+const actions: Record<string, () => void> = {
+  create: () => (DEMO ? setupFlow() : void createWalletLive()),
+  connect: () => void connectFlow(),
+  "to-demo": () => switchMode("demo"),
+  "to-live": () => switchMode("live"),
+  setup: () => setupFlow(),
+  start: () => startFlow(),
+  how: () => howSheet(),
+  invite: () => inviteSheet(),
+  join: () => saved.current && void joinFlow(saved.current),
+  pay: () =>
+    confirmTx({
+      title: `Pay ${usd(shareOf())}`,
+      lead: "Your signature can only move exactly one share, into this circle, for this round.",
+      rows: [["To", `${circleName()}'s pot`], ["Amount", `${usd(shareOf())} tUSD8`], ["Round", String(snap?.round ?? "")], scopeRow("this circle"), gasRow],
+      cta: "Sign the payment",
+      run: async (p) => {
+        await ensureFunds(p, shareOf());
+        return (await signAndSend(p, `${usd(shareOf())} for round ${snap!.round}`, () => A.signPay(w!, saved.current!, shareOf(), BigInt(snap!.round)))).tx;
+      },
+      done: () => `Paid. Your ${usd(shareOf())} is in the pot.`,
+    }),
+  order: () => orderFlow(),
+  revokeOrder: () =>
+    confirmTx({
+      title: "Revoke your standing order",
+      lead: "The circle stops collecting your share. You can still pay each round yourself.",
+      rows: [["Circle", circleName()], gasRow],
+      cta: "Sign",
+      run: async (p) => (await signAndSend(p, "the revocation", () => A.signRevokeOrder(w!, saved.current!))).tx,
+      done: () => "Revoked. Nothing more will be collected.",
+    }),
+  bid: () =>
+    confirmTx({
+      title: `Bid a ${usd(bidVal)} discount`,
+      lead: "If your bid is the biggest when the timer ends, you take this round's pot minus the discount. The discount, less the organiser's fee, is shared with every member.",
+      rows: [["Discount", usd(bidVal)], ["You'd take", `${usd(potOf() - bidVal)} of the ${usd(potOf())} pot`], ["Cap", `${(snap?.info?.maxDiscountBps ?? 3000) / 100}% of the pot`], gasRow],
+      cta: "Sign the bid",
+      run: async (p) => (await signAndSend(p, `a ${usd(bidVal)} bid`, () => A.signBid(w!, saved.current!, BigInt(snap!.round), bidVal))).tx,
+      done: () => "Bid placed. It wins if nobody bids higher before the timer ends.",
+    }),
+  close: () =>
+    confirmTx({
+      title: "Close the auction",
+      lead: "Bidding is over. Closing picks the winner (the biggest discount, or with no bids the first member who hasn't won) and locks their payee for this pot.",
+      rows: [["Signature", "none needed: the rules decide"], gasRow],
+      cta: "Close it",
+      run: async (p) => (await withStep(p, "The relayer closes the auction", () => A.submit(A.anyone(saved.current!, "closeAuction")), (r) => txLink(r.tx, "tx"))).tx,
+      done: () => "Closed. Now the members approve the release.",
+    }),
+  approve: () =>
+    confirmTx({
+      title: "Approve the release",
+      lead: "Check who gets the pot. The payee was fixed when the auction closed; a later change can't touch this pot.",
+      rows: [
+        ["Pot goes to", winnerPayee()],
+        ["Winner", esc(snap?.r ? nameOf(snap.r.winner) : "")],
+        ["Discount", usd(snap?.r?.discount ?? 0n)],
+        ...(snap?.quote ? ([["Paid out now", usd(snap.quote.payout)], ["Held as security", usd(snap.quote.securityHeld)], ["Dividend to all", usd(snap.quote.dividend)]] as [string, string][]) : []),
+        ["Approvals", `${snap?.r?.approvals ?? 0} of ${snap?.needed ?? 2}, yours makes ${(snap?.r?.approvals ?? 0) + 1}`],
+        gasRow,
+      ],
+      cta: "Sign the approval",
+      run: async (p) => (await signAndSend(p, "your approval", () => A.signApprove(w!, saved.current!, BigInt(snap!.round)))).tx,
+      done: () => "Approved.",
+    }),
+  release: () =>
+    confirmTx({
+      title: "Release the pot",
+      lead: "The quorum has approved. Anyone can release it, and it can only go to the payee locked when the auction closed.",
+      rows: [["Goes to", winnerPayee()], ...(snap?.quote ? ([["Paid out now", usd(snap.quote.payout)], ["Held as security", usd(snap.quote.securityHeld)], ["Dividend to all", usd(snap.quote.dividend)]] as [string, string][]) : []), gasRow],
+      cta: "Release it",
+      run: async (p) => (await withStep(p, "The relayer releases the pot", () => A.submit(A.anyone(saved.current!, "release")), (r) => txLink(r.tx, "tx"))).tx,
+      done: (tx) => `<span class="big-ok">✓</span> Released to the locked payee. The discount is shared with every member.<br>${tx ? txLink(tx) : ""}`,
+    }),
+  payee: () => payeeFlow(),
+  cancelPayee: () =>
+    confirmTx({
+      title: "Cancel the payee change",
+      lead: "Your payee stays as it is. If you didn't ask for this change, your key may be stolen: cancel it, and tell the circle.",
+      rows: [["Circle", circleName()], gasRow],
+      cta: "Sign and cancel",
+      run: async (p) => (await signAndSend(p, "the cancellation", () => A.signCancelPayee(w!, saved.current!))).tx,
+      done: () => "Cancelled. Your payee didn't change.",
+    }),
+  leave: () =>
+    confirmTx({
+      title: "Leave this circle",
+      lead: `You can leave until the circle is full. Your ${usd(shareOf())} pledge goes back to your payee.`,
+      rows: [["Circle", circleName()], ["Refund", usd(shareOf())], gasRow],
+      cta: "Sign and leave",
+      run: async (p) => (await signAndSend(p, "your leave", () => A.signLeave(w!, saved.current!))).tx,
+      done: () => "You left. Your pledge is on its way back to your payee.",
+    }),
+  cancelUnfilled: () =>
+    confirmTx({
+      title: "Cancel and refund",
+      lead: "The circle didn't fill by its deadline. Cancelling refunds every pledge in full, each to its member's payee.",
+      rows: [["Signature", "none needed: the rules decide"], gasRow],
+      cta: "Cancel the circle",
+      run: async (p) => (await withStep(p, "The relayer cancels the circle", () => A.submit(A.anyone(saved.current!, "cancelUnfilled")), (r) => txLink(r.tx, "tx"))).tx,
+      done: () => "Cancelled. Every pledge is refunded.",
+    }),
+  dissolve: () =>
+    confirmTx({
+      title: "Dissolve this circle",
+      lead: "The circle stops. The money left goes back to members in proportion to what each put in minus what each took out.",
+      rows: [["Signature", "none needed: the rules decide"], gasRow],
+      cta: "Dissolve it",
+      run: async (p) => (await withStep(p, "The relayer dissolves the circle", () => A.submit(A.anyone(saved.current!, "dissolve")), (r) => txLink(r.tx, "tx"))).tx,
+      done: () => "Dissolved. Pay out your refund next.",
+    }),
+  withdraw: () =>
+    confirmTx({
+      title: `Pay out ${usd(snap?.owed ?? 0n)}`,
+      lead: "Your security and dividends go to your own payee; nobody can send them anywhere else.",
+      rows: [["From", circleName()], ["To", snap && meIdx(snap) >= 0 ? `${esc(snap.state[meIdx(snap)].payee.name)} · <code>${short(snap.state[meIdx(snap)].payee.address)}</code>` : "your payee"], gasRow],
+      cta: "Pay out",
+      run: async (p) => (await withStep(p, "The relayer pays you out", () => A.submit(A.anyone(saved.current!, "withdrawFor", [w!.address])), (r) => txLink(r.tx, "tx"))).tx,
+      done: () => "Done. The money is with your payee.",
+    }),
+};
 
-  screen.onclick = async (e) => {
-    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-a]");
-    if (!el || !c) return;
-    const a = el.dataset.a!;
-    if (a === "share") {
-      const url = `${location.origin}/app#circle=${c.address}`;
-      if (navigator.share) navigator.share({ title: c.name, text: `Join my Biu Wui circle “${c.name}”`, url }).catch(() => {});
-      else { await navigator.clipboard?.writeText(url); toast("Link copied"); }
+function orderFlow() {
+  const s = snap!;
+  const info = s.info!;
+  const i = meIdx(s);
+  const leftRounds = Math.max(1, Math.min(info.size, info.size - s.round + (s.paid[i] ? 0 : 1)));
+  confirmTx({
+    title: "Pay every round automatically",
+    lead: "A standing order lets the circle collect your share each round, so you never miss one. It can only take <b>one share a round</b>, at most the rounds you choose, until the date you choose. Revoke it any time.",
+    rows: [["Share", `${usd(info.share)} a round`], ["Signatures", "two: the order, and a permit for share × rounds, usable only by this circle"], gasRow],
+    form: `<label class="fl">Rounds, at most<input class="field" id="o-rounds" type="number" min="1" max="${info.size}" value="${leftRounds}" inputmode="numeric"></label>
+      <label class="fl">Expires in (days)<input class="field" id="o-days" type="number" min="1" max="365" value="7" inputmode="numeric"></label>`,
+    cta: "Sign both",
+    validate: (b) => {
+      const r = Number(val(b, "o-rounds"));
+      const d = Number(val(b, "o-days"));
+      if (!Number.isInteger(r) || r < 1 || r > info.size) return `Rounds must be 1 to ${info.size}.`;
+      if (!(d >= 1 && d <= 365)) return "Expiry must be 1 to 365 days.";
+      return null;
+    },
+    run: async (p, b) => {
+      const rounds = Number(val(b, "o-rounds"));
+      const days = Number(val(b, "o-days"));
+      const order = await withStep(p, `Signing the order: one share a round, at most ${rounds} round${rounds > 1 ? "s" : ""}`, () => A.signOrderOnly(w!, saved.current!, rounds, days), () => "no gas");
+      const call = await withStep(p, `Signing a permit for ${usd(info.share * BigInt(rounds))}, only for this circle`, () => A.signPermit(w!, saved.current!, info.share, order), () => "no gas");
+      return (await withStep(p, "The relayer submits it and pays the gas", () => A.submit(call), (r) => txLink(r.tx, "tx"))).tx;
+    },
+    done: () => "Standing order set. Our secretary collects your share each round.",
+  });
+}
+
+function payeeFlow() {
+  const s = snap!;
+  const me = s.state[meIdx(s)];
+  confirmTx({
+    title: "Change your payee",
+    lead: `The change waits <b>${dur(s.info!.payeeDelay)}</b> before it takes effect. Every member sees it meanwhile, and you can cancel it with one signature. A pot already closed keeps its payee.`,
+    rows: [["Payee now", `${esc(me.payee.name)} · <code>${short(me.payee.address)}</code>`], gasRow],
+    form: payeeForm(me.payee.name, me.payee.address),
+    cta: "Sign the request",
+    validate: checkPayee,
+    run: async (p, b) => (await signAndSend(p, "the payee change", () => A.signChangePayee(w!, saved.current!, val(b, "f-addr") as Address, val(b, "f-name")))).tx,
+    done: () => "Requested. Every member now sees the change while it waits.",
+  });
+}
+
+// ---------------------------------------------------------------- profile and info sheets
+
+let installEvt: (Event & { prompt(): Promise<void> }) | null = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEvt = e as never;
+});
+
+function profileSheet() {
+  const sh = openSheet("");
+  const home = () => {
+    const s = snap;
+    sh.show(`
+      <div class="profile">
+        <div class="pf-head"><span class="pav me big">You</span><div><h2>${w?.kind === "injected" ? "Your wallet" : "Your test wallet"}</h2>${w ? `<button class="addr" data-copy="${w.address}">${short(w.address)} <span>copy</span></button>` : "<p class=muted>No wallet yet</p>"}</div></div>
+        ${w && s ? `<div class="pf-stats"><div class="glass"><span>Test dollars</span><b>${money(s.bal)}</b></div><div class="glass"><span>Gas you pay</span><b>None</b></div><div class="glass"><span>Wallet</span><b>${w.kind === "injected" ? "Connected" : "This browser"}</b></div></div>` : ""}
+        <nav class="menu glass">
+          <button data-p="how"><span class="mi">${MI.how}</span>How it works<i>›</i></button>
+          <button data-p="security"><span class="mi">${MI.shield}</span>Who can move the pot<i>›</i></button>
+          <button data-p="keys"><span class="mi">${MI.key}</span>Your wallet<i>›</i></button>
+          ${!DEMO && w ? `<button data-p="fund"><span class="mi">${MI.plus}</span>Add test money<i>›</i></button>` : ""}
+          ${!DEMO && w?.kind === "burner" ? `<button data-p="secret"><span class="mi">${MI.key}</span>Back up this wallet<i>›</i></button>` : ""}
+          ${DEMO ? `<button data-p="to-live"><span class="mi">${MI.live}</span>Switch to live mode<i>›</i></button>` : `<button data-p="to-demo"><span class="mi">${MI.demo}</span>Switch to demo mode<i>›</i></button>`}
+          <button data-p="proof"><span class="mi">${MI.ok}</span>Proof on chain<i>›</i></button>
+          <a href="${SITE}/live" target="_blank" rel="noopener"><span class="mi">${MI.live}</span>Watch circles live<i>↗</i></a>
+          <button data-p="install"><span class="mi">${MI.down}</span>Add Biu Wui to your home screen<i>›</i></button>
+        </nav>
+        ${w ? `<button class="danger" data-p="reset">${w.kind === "injected" ? "Disconnect this wallet" : "Reset this test wallet"}</button>` : ""}
+        <p class="fine center">Biu Wui · QDay Aevum testnet · <a href="${SITE}" target="_blank" rel="noopener">biuwui.exprmnts.fun</a></p>
+      </div>`);
+    sh.body.querySelector("[data-copy]")?.addEventListener("click", async (e) => {
+      await navigator.clipboard?.writeText((e.currentTarget as HTMLElement).dataset.copy!);
+      toast("Address copied", "ok", 1800);
+    });
+    for (const b of sh.body.querySelectorAll<HTMLElement>("[data-p]")) b.addEventListener("click", () => page(b.dataset.p!));
+  };
+  const page = (p: string) => {
+    if (p === "how") return howInto(sh, home);
+    if (p === "security") return securityInto(sh, home);
+    if (p === "proof") return proofInto(sh, home);
+    if (p === "keys") {
+      sh.show(`<div class="info"><h2>Your wallet</h2><p class="lead">${w?.kind === "injected" ? "Your browser wallet holds the key. Biu Wui only asks it to sign readable EIP-712 messages; it never asks it to send a transaction." : "The key lives in this browser only. Clearing site data deletes it. It's a test wallet: never use it for anything real."}</p>
+        <dl class="rows stack glass"><div><dt>What you sign</dt><dd>EIP-3009 payments for exactly one share, EIP-712 bids, approvals and payee changes, and EIP-2612 permits for standing orders</dd></div><div><dt>Who sends it</dt><dd>Our relayer, which pays the gas and can't change any detail you signed</dd></div><div><dt>Network</dt><dd>QDay Aevum testnet · chain 44005</dd></div><div><dt>Address</dt><dd><code>${w ? esc(w.address) : "–"}</code></dd></div></dl>
+        <p class="fine">Testnet only. tUSD8 is QDay's test dollar and has no value.</p></div>`, home);
       return;
     }
-    if (a === "wallet") return chooseWallet(() => { route(); });
-    const anyoneCan: Record<string, () => void> = {
-      close: () => act.anyone(c!, refresh, { title: "Close the auction", lead: "Bidding is over. Closing applies the fixed rules: the highest bid wins (or, with no bids, the earliest-joined member who hasn't won). The winner's payee is fixed now.", fn: "closeAuction" }),
-      release: () => act.anyone(c!, refresh, { title: "Release the pot", lead: `Enough members approved. The pot goes to <b>${esc(payeeAtClose(c!))}</b> · ${short(c!.rd!.payTo)}; the dividend is shared by all.`, fn: "release" }),
-      cancelUnfilled: () => act.anyone(c!, refresh, { title: "Cancel the unfilled circle", lead: "The joining deadline passed without enough members. Cancelling lets every member withdraw their pledge in full.", fn: "cancelUnfilled" }),
-      dissolve: () => act.anyone(c!, refresh, { title: "Dissolve the stalled circle", lead: "The round stalled past its grace period. Everything left (except dividends already earned) goes back in proportion to what each member put in minus took out.", fn: "dissolve" }),
-      withdraw: () => act.anyone(c!, refresh, { title: "Withdraw to your payee", lead: `Pays out your dividends, security or refund (${fmt(meOf(c!)!.withdrawable)} tUSD8) to your payee. Money can only go there.`, fn: "withdrawFor", args: [wallet!.address] }),
-      withdrawFor: () => act.anyone(c!, refresh, { title: "Pay out to this member's payee", lead: "Anyone can trigger it; the money only goes to that member's own locked payee.", fn: "withdrawFor", args: [el.dataset.m] }),
-    };
-    if (anyoneCan[a]) return anyoneCan[a]();
-    if (!wallet) return chooseWallet(() => route());
-    const w = wallet;
-    const m: Record<string, () => void> = {
-      join: () => act.join(c!, w, refresh),
-      pay: () => act.pay(c!, w, refresh),
-      bid: () => act.bid(c!, w, refresh),
-      approve: () => act.approve(c!, w, refresh, payeeAtClose(c!)),
-      order: () => act.standingOrder(c!, w, refresh),
-      revoke: () => act.revokeOrder(c!, w, refresh),
-      payee: () => act.changePayee(c!, w, refresh),
-      cancelPayee: () => act.cancelPayee(c!, w, refresh),
-      leave: () => act.leave(c!, w, refresh),
-    };
-    m[a]?.();
+    if (p === "to-live" || p === "to-demo") return switchMode(p === "to-live" ? "live" : "demo");
+    if (p === "fund" && w) {
+      sh.show(`<div class="info"><h2>Add test money</h2><p class="lead">Get 0.03 test dollars from Biu Wui's starter faucet (once per wallet), or ask a friend to send tUSD8 to this address on the Aevum testnet. You never need a gas token.</p>
+        <div class="addr-box glass"><span class="kicker">Your Aevum address</span><code>${w.address}</code><button class="btn-glass" data-copy="${w.address}">Copy address</button></div>
+        <div class="tx-progress"></div><button class="btn-primary block" data-faucet>Get $0.03 of test money</button></div>`, home);
+      sh.body.querySelector("[data-copy]")?.addEventListener("click", async (e) => {
+        await navigator.clipboard?.writeText((e.currentTarget as HTMLElement).dataset.copy!);
+        toast("Address copied", "ok", 1800);
+      });
+      sh.body.querySelector("[data-faucet]")!.addEventListener("click", async (e) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.disabled = true;
+        try {
+          await withStep(progressIn(sh.body.querySelector(".tx-progress")!), "Getting free test money", () => A.faucet(w!.address), (h) => txLink(h, "tx"));
+          await refresh();
+        } catch (err) {
+          b.disabled = false;
+          toast(friendly(err), "err", 6000);
+        }
+      });
+      return;
+    }
+    if (p === "secret") {
+      sh.show(`<div class="info"><h2>Back up this wallet</h2><p class="lead">This key is your test wallet. Anyone who has it controls it. Import it into MetaMask to use the same wallet elsewhere; never share it.</p>
+        <button class="btn-glass block" data-reveal>Show my wallet key</button><div class="phrase glass" hidden><code>${esc(saved.pk ?? "")}</code></div></div>`, home);
+      sh.body.querySelector("[data-reveal]")!.addEventListener("click", (e) => {
+        (e.currentTarget as HTMLElement).hidden = true;
+        sh.body.querySelector<HTMLElement>(".phrase")!.hidden = false;
+      });
+      return;
+    }
+    if (p === "install") {
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      sh.show(`<div class="info"><h2>Add Biu Wui to your home screen</h2>${installEvt ? `<p class="lead">Install Biu Wui as an app. It opens full screen, like any other app.</p><button class="btn-primary block" data-install>Install Biu Wui</button>` : ios ? `<p class="lead">In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>` : `<p class="lead">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>`}</div>`, home);
+      sh.body.querySelector("[data-install]")?.addEventListener("click", () => void installEvt?.prompt());
+      return;
+    }
+    if (p === "reset") {
+      const inj = w?.kind === "injected";
+      sh.show(`<div class="info"><h2>${inj ? "Disconnect this wallet?" : "Reset this test wallet?"}</h2><p class="lead">${inj ? "Biu Wui forgets your wallet on this device. Your circles stay on chain; connect again to see them." : "The key on this device is deleted and you start over with a fresh wallet. Your old circles and test money stay on chain, but you won't be able to use them."}</p><button class="btn-primary block danger-btn" data-yes>${inj ? "Disconnect" : "Reset"}</button></div>`, home);
+      sh.body.querySelector("[data-yes]")!.addEventListener("click", () => {
+        localStorage.removeItem(KEY);
+        location.reload();
+      });
+    }
   };
-
-  load();
-  loadEvents();
-  const t1 = setInterval(() => !document.hidden && load(), 5000);
-  const t2 = setInterval(() => !document.hidden && loadEvents(), 12000);
-  const t3 = setInterval(tick, 1000);
-  view = { stop: () => { stopped = true; clearInterval(t1); clearInterval(t2); clearInterval(t3); } };
+  home();
 }
 
-// ---------------------------------------------------------------- router
+function howInto(sh: Sheet, back?: () => void) {
+  sh.show(`<div class="info"><h2>How a round works</h2><figure class="how-fig"><div id="how-ring" style="--ring: min(300px, 74vw)"></div><figcaption id="how-cap"></figcaption><div class="flow-dots" id="how-dots"></div></figure>
+    <dl class="rows stack glass"><div><dt>Pay</dt><dd>Everyone signs a payment of one share into a pot nobody holds.</dd></div><div><dt>Bid</dt><dd>Need money now? Bid a discount. The biggest wins.</dd></div><div><dt>Close</dt><dd>Anyone closes the auction. The winner's payee is locked.</dd></div><div><dt>Approve</dt><dd>A quorum signs yes, after seeing the payee's name and address.</dd></div><div><dt>Release</dt><dd>Anyone releases it. The pot goes only to the locked payee, and the discount is shared with everyone.</dd></div></dl></div>`, back);
+  const demo = mountFlowDemo(sh.body.querySelector("#how-ring")!, sh.body.querySelector("#how-cap")!, sh.body.querySelector("#how-dots")!);
+  const obs = new MutationObserver(() => {
+    if (!sh.body.querySelector("#how-ring")) {
+      demo.stop();
+      obs.disconnect();
+    }
+  });
+  obs.observe(sh.body, { childList: true });
+}
 
-function route() {
-  view?.stop();
-  view = null;
-  screen.onclick = null;
-  scrollTo({ top: 0 });
-  const h = location.hash.slice(1);
-  const circle = h.match(/circle=(0x[0-9a-fA-F]{40})/)?.[1] as Address | undefined;
-  document.body.dataset.screen = circle ? "circle" : h === "open" ? "open" : wallet ? "home" : "welcome";
-  document.title = "Biu Wui 標會 · app";
-  if (circle) return circleView(circle);
-  if (h === "open") return openForm();
-  if (h === "demo") return circleView(DEMO_CIRCLE);
-  return wallet ? home() : welcome();
+function howSheet() {
+  const sh = openSheet("");
+  howInto(sh);
+}
+
+function securityInto(sh: Sheet, back?: () => void) {
+  const row = (ok: boolean, t: string, d: string) => `<div class="who-row"><span class="mark ${ok ? "y" : "n"}">${ok ? "✓" : "✕"}</span><div><b>${t}</b><p>${d}</p></div></div>`;
+  sh.show(`<div class="info"><h2>Who can move the pot?</h2><div class="who glass">
+    ${row(false, "The organiser", "Opens the circle and earns a capped fee from discounts. No owner, no admin, no upgrade.")}
+    ${row(false, "Our relayer", "Only submits your signatures and pays the gas. Change any detail and the signature fails.")}
+    ${row(false, "A thief with your key", "A payee change waits, every member sees it, and you cancel it with one signature.")}
+    ${row(true, "The locked payee, after a quorum", "The payee is fixed when the auction closes. Members approve, then anyone releases to it.")}
+    </div><p class="lead">Try it: in a circle, open <b>Your moves</b> and request a payee change. Every member sees the warning until it takes effect, and one signature cancels it.</p></div>`, back);
+}
+
+function proofInto(sh: Sheet, back?: () => void) {
+  const a = (href: string, t: string) => `<a href="${href}" target="_blank" rel="noopener">${t} ↗</a>`;
+  sh.show(`<div class="info"><h2>Proof on chain</h2><dl class="rows glass">
+    <div><dt>Factory</dt><dd>${a(`${NET.explorer}/address/${NET.factory}`, short(NET.factory))}</dd></div>
+    <div><dt>Circle code</dt><dd>${a(`${NET.explorer}/address/${NET.implementation}`, short(NET.implementation))}</dd></div>
+    ${saved.current ? `<div><dt>Your circle</dt><dd>${a(`${NET.explorer}/address/${saved.current}`, short(saved.current))}</dd></div>` : ""}
+    <div><dt>Tests</dt><dd>${a("https://github.com/nikhil-pn/biuwui/tree/main/test", "52 Foundry tests")}</dd></div>
+    <div><dt>Live circles</dt><dd>${a(`${SITE}/live`, "biuwui.exprmnts.fun/live")}</dd></div>
+    <div><dt>Every claim</dt><dd>${a(`${SITE}/proof`, "biuwui.exprmnts.fun/proof")}</dd></div>
+    </dl></div>`, back);
+}
+
+function circlesSheet() {
+  const sh = openSheet(`<div class="info"><h2>Your circles</h2>
+    ${saved.circles.length ? `<nav class="menu glass">${saved.circles.map((c, i) => `<button data-c="${c}"><span class="mi">${MI.circle}</span>Circle ${i + 1} <small>${short(c)}</small><i>${c === saved.current ? "✓" : "›"}</i></button>`).reverse().join("")}</nav>` : '<p class="lead">No circles yet.</p>'}
+    <button class="btn-primary block" data-new>${DEMO ? "Start a new circle" : "Open a new circle"}</button></div>`);
+  for (const b of sh.body.querySelectorAll<HTMLElement>("[data-c]"))
+    b.addEventListener("click", () => {
+      saved.current = b.dataset.c as Address;
+      save();
+      prev = null;
+      sh.close();
+      void refresh();
+    });
+  sh.body.querySelector("[data-new]")!.addEventListener("click", () => {
+    sh.close();
+    startFlow();
+  });
+}
+
+// ---------------------------------------------------------------- events and loop
+
+document.addEventListener("click", (e) => {
+  const t = e.target as HTMLElement;
+  const act = t.closest<HTMLElement>("[data-act]");
+  if (act) return actions[act.dataset.act!]?.();
+  const bid = t.closest<HTMLElement>("[data-bid]");
+  if (bid) {
+    bidVal = clamp(bidVal + BigInt(Number(bid.dataset.bid)) * bidStep(), bidFloor(), bidMax());
+    showBid();
+    return;
+  }
+  const go = t.closest<HTMLElement>("[data-tab],[data-tab-go]");
+  if (go && w) {
+    tab = (go.dataset.tab ?? go.dataset.tabGo) as typeof tab;
+    renderShell();
+    draw();
+  }
+});
+$("profile-btn").addEventListener("click", () => profileSheet());
+for (const b of document.querySelectorAll<HTMLButtonElement>("#mode-seg [data-mode]")) {
+  const on = (b.dataset.mode === "demo") === DEMO;
+  b.setAttribute("aria-checked", String(on));
+  b.addEventListener("click", () => !on && switchMode(b.dataset.mode as Mode));
+}
+$("circle-pill").addEventListener("click", () => (w ? circlesSheet() : DEMO ? setupFlow() : undefined));
+$("dock-plus").addEventListener("click", () => (w ? startFlow() : DEMO ? setupFlow() : undefined));
+
+function tickTimers() {
+  for (const el of document.querySelectorAll<HTMLElement>(".timer[data-end]")) {
+    el.textContent = left(Number(el.dataset.end) - Math.floor(Date.now() / 1000));
+  }
+}
+
+let busy: Promise<void> | null = null;
+let again = false;
+async function refresh(): Promise<void> {
+  if (busy) {
+    again = true;
+    return busy;
+  }
+  busy = (async () => {
+    do {
+      again = false;
+      try {
+        const s = await load();
+        prev = snap;
+        snap = s;
+        draw();
+      } catch (e) {
+        console.error("Biu Wui:", e);
+      }
+    } while (again);
+  })();
+  await busy;
+  busy = null;
 }
 
 async function boot() {
-  hydrateChops();
-  $("#wallet-pill")!.addEventListener("click", walletSheet);
-  wallet = await restoreWallet();
-  renderTopbar();
-  route();
-  refreshBalance();
-  addEventListener("hashchange", route);
-  onInjectedChange(async () => { wallet = await restoreWallet(); refreshBalance(); route(); });
-  setInterval(() => !document.hidden && refreshBalance(), 20000);
-  if ("serviceWorker" in navigator && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-    navigator.serviceWorker.register("/sw.js", { scope: "/app" }).catch(() => {});
+  if (saved.wallet === "injected" && !DEMO) w = await injected(false).catch(() => null);
+  else if (saved.pk) w = burner(saved.pk);
+  if (w) {
+    (PEOPLE as Record<string, string>)[w.address.toLowerCase()] = "You";
+    renderShell();
   }
+  onAccountsChanged(() => saved.wallet === "injected" && location.reload());
+  draw();
+  await refresh();
+  if (joinParam) {
+    pendingJoin = joinParam;
+    if (w) void joinFlow(joinParam);
+    else toast("You're invited to a circle. Make a test wallet or connect yours to join.", "info", 6000);
+  }
+  setInterval(() => void refresh(), 4000);
+  setInterval(tickTimers, 1000);
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
 }
-boot();
 
+void boot();
