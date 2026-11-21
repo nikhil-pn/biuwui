@@ -25,7 +25,7 @@ const T = {
 };
 
 /** Small line icons for the feed (SVG, drawn in the text colour). */
-const svg = (d) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const svg = (d) => `<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 export const ICON = {
   in: svg('<path d="M12 4v14M6 12l6 6 6-6"/>'),
   out: svg('<path d="M7 17 17 7M9 7h8v8"/>'),

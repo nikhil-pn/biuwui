@@ -118,3 +118,4 @@ code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88em
 /* ---------------------------------------------------------------- money flow figure (how page) */
 .flow { margin-top: 32px; padding: 28px 24px 22px; border-radius: 30px; display: grid; justify-items: center; gap: 14px; }
 .flow figcaption { font-size: 16px; color: #3a3a3e; text-align: center; min-height: 48px; max-width: 30em; line-height: 1.5; }
+.attempts .good { color: #86efac; font-weight: 600; }
