@@ -73,7 +73,7 @@ body[data-screen="welcome"] .dock, body[data-screen="loading"] .dock { display: 
 .bal-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .big { font-size: 38px; font-weight: 500; }
 .wallet-art { position: relative; height: 196px; overflow: visible; }
-.wallet-art .wallet { position: absolute; left: 50%; top: 0; width: min(380px, 100%); margin: 0; transform: translateX(-50%) scale(0.84); transform-origin: top center; }
+.wallet-art .wallet { position: absolute; left: 50%; top: 0; width: min(316px, 88%); margin: 0; transform: translateX(-50%) scale(0.84); transform-origin: top center; }
 .welcome .wallet-art { height: 210px; }
 .welcome .wallet-art .wallet { transform: translateX(-50%) scale(0.9); }
 
