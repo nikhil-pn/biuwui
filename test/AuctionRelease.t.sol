@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {BiuWuiBase} from "./BiuWuiBase.t.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
+import {SovereignBase} from "./SovereignBase.t.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
 
-/// The bid-for-the-pot auction (標會) and the quorum release.
-contract AuctionReleaseTest is BiuWuiBase {
+/// The bid-for-the-pot auction and the quorum release.
+contract AuctionReleaseTest is SovereignBase {
     function setUp() public override {
         super.setUp();
         fill();
@@ -22,13 +22,13 @@ contract AuctionReleaseTest is BiuWuiBase {
         _bid(2, 5e6);
         _bid(3, 8e6);
         vm.prank(people[4]);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.BidNotHigher.selector, 8e6, 8e6));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.BidNotHigher.selector, 8e6, 8e6));
         circle.bid(8e6);
 
         endBidding();
         vm.prank(makeAddr("anyone"));
         circle.closeAuction();
-        BiuWuiCircle.Round memory rd = circle.getRound(1);
+        SovereignCircle.Round memory rd = circle.getRound(1);
         assertEq(rd.winner, people[3]);
         assertEq(rd.discount, 8e6);
 
@@ -51,38 +51,38 @@ contract AuctionReleaseTest is BiuWuiBase {
     function test_DiscountCapAndEligibility() public {
         uint256 cap = circle.maxDiscount();
         vm.prank(people[0]);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.DiscountTooHigh.selector, cap + 1, cap));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.DiscountTooHigh.selector, cap + 1, cap));
         circle.bid(cap + 1);
         runRound(); // Ah Ming wins round 1 by default
         payAll();
         vm.prank(people[0]);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.NotEligible.selector, people[0]));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.NotEligible.selector, people[0]));
         circle.bid(1e6);
     }
 
     function test_UnpaidMemberCannotBid() public {
         runRound();
         vm.prank(people[1]);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.NotEligible.selector, people[1]));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.NotEligible.selector, people[1]));
         circle.bid(1e6);
     }
 
     function test_BidSignatureBoundToRoundAndNonce() public {
         uint256 deadline = block.timestamp + 1 hours;
         bytes memory sig = sigBid(2, 3e6, deadline);
-        vm.expectRevert(BiuWuiCircle.BadSignature.selector);
+        vm.expectRevert(SovereignCircle.BadSignature.selector);
         circle.bidWithSig(people[2], 4e6, deadline, sig); // relayer cannot change the amount
         circle.bidWithSig(people[2], 3e6, deadline, sig);
-        vm.expectRevert(BiuWuiCircle.BadSignature.selector);
+        vm.expectRevert(SovereignCircle.BadSignature.selector);
         circle.bidWithSig(people[2], 3e6, deadline, sig); // nor replay it
     }
 
     function test_CannotCloseEarlyOrTwice() public {
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.TooEarly.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.TooEarly.selector, 1));
         circle.closeAuction();
         endBidding();
         circle.closeAuction();
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.AlreadyClosed.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.AlreadyClosed.selector, 1));
         circle.closeAuction();
     }
 
@@ -92,7 +92,7 @@ contract AuctionReleaseTest is BiuWuiBase {
         approveBy(circle.quorumNeeded() - 1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                BiuWuiCircle.NoQuorum.selector, circle.quorumNeeded() - 1, circle.quorumNeeded()
+                SovereignCircle.NoQuorum.selector, circle.quorumNeeded() - 1, circle.quorumNeeded()
             )
         );
         circle.release();
@@ -103,7 +103,7 @@ contract AuctionReleaseTest is BiuWuiBase {
         circle.closeAuction();
         vm.startPrank(people[0]);
         circle.approveRelease();
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.AlreadyApproved.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.AlreadyApproved.selector, 1));
         circle.approveRelease();
         vm.stopPrank();
     }
@@ -114,7 +114,7 @@ contract AuctionReleaseTest is BiuWuiBase {
         assertGt(held, 0);
         // round 2: everyone but Ah Ming pays
         for (uint256 i = 1; i < SIZE; ++i) {
-            BiuWuiCircle.Authorization memory a = signPay(i, 2);
+            SovereignCircle.Authorization memory a = signPay(i, 2);
             circle.payWithAuthorization(people[i], a);
         }
         endBidding();
@@ -127,14 +127,14 @@ contract AuctionReleaseTest is BiuWuiBase {
     function test_PayTooLateReverts() public {
         runRound();
         endBidding();
-        BiuWuiCircle.Authorization memory a = signPay(1, 2);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.TooLate.selector, 2));
+        SovereignCircle.Authorization memory a = signPay(1, 2);
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.TooLate.selector, 2));
         circle.payWithAuthorization(people[1], a);
     }
 
     function test_PaySignatureCannotBeReusedNextRound() public {
         runRound();
-        BiuWuiCircle.Authorization memory a = signPay(1, 3); // signed for round 3, used in round 2
+        SovereignCircle.Authorization memory a = signPay(1, 3); // signed for round 3, used in round 2
         vm.expectRevert();
         circle.payWithAuthorization(people[1], a);
     }
@@ -143,7 +143,7 @@ contract AuctionReleaseTest is BiuWuiBase {
         for (uint256 r = 1; r <= SIZE; ++r) {
             runRound();
         }
-        assertEq(uint8(circle.phase()), uint8(BiuWuiCircle.Phase.Completed));
+        assertEq(uint8(circle.phase()), uint8(SovereignCircle.Phase.Completed));
         for (uint256 i; i < SIZE; ++i) {
             assertTrue(circle.hasWon(people[i]));
             if (circle.withdrawable(people[i]) != 0) circle.withdrawFor(people[i]);

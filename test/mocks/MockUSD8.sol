@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // From the Aevum Starter Kit (github.com/qday-io/aevum-starter-kit), Copyright (c) 2026 PQA Labs, MIT License.
-// Changed: added EIP-2612 permit (the real tUSD8 has it; Biu Wui standing orders use it).
+// Changed: added EIP-2612 permit (the real tUSD8 has it; Sovereign standing orders use it).
 pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";

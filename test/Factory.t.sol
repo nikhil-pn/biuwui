@@ -1,38 +1,38 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {BiuWuiBase} from "./BiuWuiBase.t.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
-import {BiuWuiFactory} from "../src/BiuWuiFactory.sol";
+import {SovereignBase} from "./SovereignBase.t.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
+import {SovereignFactory} from "../src/SovereignFactory.sol";
 import {MockUSD8} from "./mocks/MockUSD8.sol";
 
-contract FactoryTest is BiuWuiBase {
+contract FactoryTest is SovereignBase {
     function test_FactoryListsCircles() public view {
         assertEq(factory.circleCount(), 1);
         assertTrue(factory.isCircle(address(circle)));
         assertEq(address(factory.circlesOf(organiser)[0]), address(circle));
         assertEq(circle.organiser(), organiser);
-        assertEq(circle.name(), "Sham Shui Po Biu Wui");
+        assertEq(circle.name(), "Family Circle");
     }
 
     function test_FactoryForcesItsOwnToken() public {
-        BiuWuiCircle.Params memory p = defaultParams();
+        SovereignCircle.Params memory p = defaultParams();
         p.token = address(new MockUSD8());
-        BiuWuiCircle c = openCircle(p);
+        SovereignCircle c = openCircle(p);
         assertEq(address(c.token()), address(usd));
     }
 
     function test_CloneCannotBeInitializedTwice() public {
-        vm.expectRevert(BiuWuiCircle.AlreadyInitialized.selector);
+        vm.expectRevert(SovereignCircle.AlreadyInitialized.selector);
         circle.initialize(defaultParams(), address(this));
     }
 
     function test_ImplementationCannotBeInitialized() public {
-        vm.expectRevert(BiuWuiCircle.AlreadyInitialized.selector);
+        vm.expectRevert(SovereignCircle.AlreadyInitialized.selector);
         impl.initialize(defaultParams(), address(this));
     }
 
-    function _openSig(uint256 k, address org, BiuWuiCircle.Params memory p, uint256 deadline)
+    function _openSig(uint256 k, address org, SovereignCircle.Params memory p, uint256 deadline)
         internal
         view
         returns (bytes memory)
@@ -50,7 +50,7 @@ contract FactoryTest is BiuWuiBase {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256("Biu Wui Factory"),
+                keccak256("Sovereign Factory"),
                 keccak256("1"),
                 block.chainid,
                 address(factory)
@@ -61,34 +61,34 @@ contract FactoryTest is BiuWuiBase {
     }
 
     function test_GaslessOpenMakesSignerTheOrganiser() public {
-        BiuWuiCircle.Params memory p = defaultParams();
+        SovereignCircle.Params memory p = defaultParams();
         uint256 deadline = block.timestamp + 1 hours;
         bytes memory sig = _openSig(keys[3], people[3], p, deadline);
         vm.prank(relayer);
-        BiuWuiCircle c = factory.createCircleWithSig(p, people[3], deadline, sig);
+        SovereignCircle c = factory.createCircleWithSig(p, people[3], deadline, sig);
         assertEq(c.organiser(), people[3]);
         assertTrue(factory.isCircle(address(c)));
         // replay fails (nonce used), and a relayer cannot change any parameter
-        vm.expectRevert(BiuWuiFactory.BadSignature.selector);
+        vm.expectRevert(SovereignFactory.BadSignature.selector);
         factory.createCircleWithSig(p, people[3], deadline, sig);
         p.feeBps = 500;
         sig = _openSig(keys[3], people[3], defaultParams(), deadline);
-        vm.expectRevert(BiuWuiFactory.BadSignature.selector);
+        vm.expectRevert(SovereignFactory.BadSignature.selector);
         factory.createCircleWithSig(p, people[3], deadline, sig);
     }
 
     function test_BadParamsRejected() public {
-        BiuWuiCircle.Params memory p = defaultParams();
+        SovereignCircle.Params memory p = defaultParams();
         p.size = 1;
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.BadParams.selector, uint8(2)));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.BadParams.selector, uint8(2)));
         openCircle(p);
         p = defaultParams();
         p.feeBps = 501;
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.BadParams.selector, uint8(8)));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.BadParams.selector, uint8(8)));
         openCircle(p);
         p = defaultParams();
         p.quorumBps = 5000;
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.BadParams.selector, uint8(9)));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.BadParams.selector, uint8(9)));
         openCircle(p);
     }
 }

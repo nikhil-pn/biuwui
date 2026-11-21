@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {BiuWuiBase} from "./BiuWuiBase.t.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
+import {SovereignBase} from "./SovereignBase.t.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
 
 /// If a round stalls, anyone can dissolve the circle and the money left goes back pro rata.
-contract DissolveTest is BiuWuiBase {
+contract DissolveTest is SovereignBase {
     function setUp() public override {
         super.setUp();
         fill();
@@ -15,11 +15,11 @@ contract DissolveTest is BiuWuiBase {
         runRound(); // Ah Ming took round 1
         payAll();
         endBidding();
-        vm.expectRevert(BiuWuiCircle.NotStalled.selector);
+        vm.expectRevert(SovereignCircle.NotStalled.selector);
         circle.dissolve();
         vm.warp(block.timestamp + GRACE + 1); // nobody closed the auction
         circle.dissolve();
-        assertEq(uint8(circle.phase()), uint8(BiuWuiCircle.Phase.Dissolved));
+        assertEq(uint8(circle.phase()), uint8(SovereignCircle.Phase.Dissolved));
         // Ah Ming already took more than he paid in, so he gets nothing more; his held security
         // goes to the four who were never paid, in equal parts.
         assertEq(circle.withdrawable(people[0]), 0);
@@ -34,7 +34,7 @@ contract DissolveTest is BiuWuiBase {
     }
 
     function test_NonStalledCannotDissolve() public {
-        vm.expectRevert(BiuWuiCircle.NotStalled.selector);
+        vm.expectRevert(SovereignCircle.NotStalled.selector);
         circle.dissolve();
     }
 }

@@ -2,14 +2,14 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
-import {BiuWuiFactory} from "../src/BiuWuiFactory.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
+import {SovereignFactory} from "../src/SovereignFactory.sol";
 import {MockUSD8} from "./mocks/MockUSD8.sol";
 
 /// @dev Shared setup: a mock tUSD8 (same EIP-712 domain, EIP-2612 and EIP-3009 as the real one), the
 /// circle implementation, the factory, and five members with private keys so tests can sign the
 /// same messages a wallet would.
-abstract contract BiuWuiBase is Test {
+abstract contract SovereignBase is Test {
     uint256 internal constant SHARE = 10e6; // 10 tUSD8 (6 decimals)
     uint8 internal constant SIZE = 5;
     uint32 internal constant JOIN = 3 days;
@@ -24,9 +24,9 @@ abstract contract BiuWuiBase is Test {
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     MockUSD8 internal usd;
-    BiuWuiCircle internal impl;
-    BiuWuiFactory internal factory;
-    BiuWuiCircle internal circle;
+    SovereignCircle internal impl;
+    SovereignFactory internal factory;
+    SovereignCircle internal circle;
 
     address internal organiser = makeAddr("organiser");
     address internal relayer = makeAddr("relayer");
@@ -36,8 +36,8 @@ abstract contract BiuWuiBase is Test {
 
     function setUp() public virtual {
         usd = new MockUSD8();
-        impl = new BiuWuiCircle();
-        factory = new BiuWuiFactory(address(usd), address(impl));
+        impl = new SovereignCircle();
+        factory = new SovereignFactory(address(usd), address(impl));
         for (uint256 i; i < names.length; ++i) {
             (address a, uint256 k) = makeAddrAndKey(names[i]);
             people.push(a);
@@ -47,8 +47,8 @@ abstract contract BiuWuiBase is Test {
         circle = openCircle(defaultParams());
     }
 
-    function defaultParams() internal view returns (BiuWuiCircle.Params memory) {
-        return BiuWuiCircle.Params({
+    function defaultParams() internal view returns (SovereignCircle.Params memory) {
+        return SovereignCircle.Params({
             token: address(usd),
             share: SHARE,
             size: SIZE,
@@ -60,11 +60,11 @@ abstract contract BiuWuiBase is Test {
             feeBps: 200,
             quorumBps: 5001,
             securityBps: 5000,
-            name: "Sham Shui Po Biu Wui"
+            name: "Family Circle"
         });
     }
 
-    function openCircle(BiuWuiCircle.Params memory p) internal returns (BiuWuiCircle c) {
+    function openCircle(SovereignCircle.Params memory p) internal returns (SovereignCircle c) {
         vm.prank(organiser);
         c = factory.createCircle(p);
     }
@@ -75,11 +75,11 @@ abstract contract BiuWuiBase is Test {
         return keccak256(abi.encodePacked("\x19\x01", usd.DOMAIN_SEPARATOR(), structHash));
     }
 
-    function _circleDomain(BiuWuiCircle c) internal view returns (bytes32) {
+    function _circleDomain(SovereignCircle c) internal view returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256("Biu Wui"),
+                keccak256("Sovereign"),
                 keccak256("1"),
                 block.chainid,
                 address(c)
@@ -95,7 +95,7 @@ abstract contract BiuWuiBase is Test {
     function signReceive(uint256 k, address from, address to, uint256 value, bytes32 nonce)
         internal
         view
-        returns (BiuWuiCircle.Authorization memory a)
+        returns (SovereignCircle.Authorization memory a)
     {
         a.validAfter = 0;
         a.validBefore = block.timestamp + 1 hours;
@@ -103,22 +103,22 @@ abstract contract BiuWuiBase is Test {
         (a.v, a.r, a.s) = vm.sign(k, _tokenDigest(structHash));
     }
 
-    function signJoin(uint256 i, BiuWuiCircle c, address payout, string memory n)
+    function signJoin(uint256 i, SovereignCircle c, address payout, string memory n)
         internal
         view
-        returns (BiuWuiCircle.Authorization memory)
+        returns (SovereignCircle.Authorization memory)
     {
         return signReceive(keys[i], people[i], address(c), SHARE, c.joinNonce(people[i], payout, n));
     }
 
-    function signPay(uint256 i, uint256 r) internal view returns (BiuWuiCircle.Authorization memory) {
+    function signPay(uint256 i, uint256 r) internal view returns (SovereignCircle.Authorization memory) {
         return signReceive(keys[i], people[i], address(circle), SHARE, circle.payNonce(people[i], r));
     }
 
     function signPermit(uint256 i, address spender, uint256 value, uint256 deadline)
         internal
         view
-        returns (BiuWuiCircle.PermitSig memory p)
+        returns (SovereignCircle.PermitSig memory p)
     {
         p.deadline = deadline;
         bytes32 structHash =
@@ -189,7 +189,7 @@ abstract contract BiuWuiBase is Test {
     /// @dev Everyone joins gaslessly through the relayer, paying out to themselves.
     function fill() internal {
         for (uint256 i; i < people.length; ++i) {
-            BiuWuiCircle.Authorization memory a = signJoin(i, circle, people[i], names[i]);
+            SovereignCircle.Authorization memory a = signJoin(i, circle, people[i], names[i]);
             vm.prank(relayer);
             circle.joinWithAuthorization(people[i], names[i], people[i], a);
         }
@@ -199,7 +199,7 @@ abstract contract BiuWuiBase is Test {
         uint256 r = circle.currentRound();
         for (uint256 i; i < people.length; ++i) {
             if (circle.paid(r, people[i])) continue;
-            BiuWuiCircle.Authorization memory a = signPay(i, r);
+            SovereignCircle.Authorization memory a = signPay(i, r);
             vm.prank(relayer);
             circle.payWithAuthorization(people[i], a);
         }

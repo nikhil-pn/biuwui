@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {BiuWuiCircle} from "../../src/BiuWuiCircle.sol";
-import {BiuWuiFactory} from "../../src/BiuWuiFactory.sol";
+import {SovereignCircle} from "../../src/SovereignCircle.sol";
+import {SovereignFactory} from "../../src/SovereignFactory.sol";
 import {IStablecoin} from "../../src/interfaces/IStablecoin.sol";
 
 interface ITUSD8 is IStablecoin {
@@ -24,7 +24,7 @@ contract AevumForkTest is Test {
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     uint256 internal constant SHARE = 1e6;
 
-    BiuWuiCircle internal circle;
+    SovereignCircle internal circle;
     address[3] internal who;
     uint256[3] internal key;
     string[3] internal names = ["Ah Ming", "Kitty", "Wing"];
@@ -32,9 +32,9 @@ contract AevumForkTest is Test {
 
     function setUp() public {
         if (block.chainid != 44005) return;
-        BiuWuiFactory factory = new BiuWuiFactory(address(TUSD8), address(new BiuWuiCircle()));
+        SovereignFactory factory = new SovereignFactory(address(TUSD8), address(new SovereignCircle()));
         circle = factory.createCircle(
-            BiuWuiCircle.Params({
+            SovereignCircle.Params({
                 token: address(TUSD8),
                 share: SHARE,
                 size: 3,
@@ -46,7 +46,7 @@ contract AevumForkTest is Test {
                 feeBps: 100,
                 quorumBps: 6000,
                 securityBps: 5000,
-                name: "Fork Biu Wui"
+                name: "Fork Sovereign"
             })
         );
         for (uint256 i; i < 3; ++i) {
@@ -59,7 +59,7 @@ contract AevumForkTest is Test {
         return keccak256(abi.encodePacked("\x19\x01", domain, structHash));
     }
 
-    function _auth(uint256 i, bytes32 nonce) internal view returns (BiuWuiCircle.Authorization memory a) {
+    function _auth(uint256 i, bytes32 nonce) internal view returns (SovereignCircle.Authorization memory a) {
         a.validBefore = block.timestamp + 1 hours;
         bytes32 h = keccak256(abi.encode(RECEIVE_TYPEHASH, who[i], address(circle), SHARE, 0, a.validBefore, nonce));
         (a.v, a.r, a.s) = vm.sign(key[i], _digest(TUSD8.DOMAIN_SEPARATOR(), h));
@@ -69,7 +69,7 @@ contract AevumForkTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256("Biu Wui"),
+                keccak256("Sovereign"),
                 keccak256("1"),
                 block.chainid,
                 address(circle)
@@ -84,12 +84,12 @@ contract AevumForkTest is Test {
 
         // 1. three gasless joins (EIP-3009 pledges)
         for (uint256 i; i < 3; ++i) {
-            BiuWuiCircle.Authorization memory a = _auth(i, circle.joinNonce(who[i], who[i], names[i]));
+            SovereignCircle.Authorization memory a = _auth(i, circle.joinNonce(who[i], who[i], names[i]));
             vm.prank(relayer);
             circle.joinWithAuthorization(who[i], names[i], who[i], a);
             assertEq(who[i].balance, 0, "members hold no gas token");
         }
-        assertEq(uint8(circle.phase()), uint8(BiuWuiCircle.Phase.Running));
+        assertEq(uint8(circle.phase()), uint8(SovereignCircle.Phase.Running));
 
         // 2. Kitty bids a discount, signed
         uint256 deadline = block.timestamp + 1 hours;
@@ -122,7 +122,7 @@ contract AevumForkTest is Test {
         bytes memory orderSig = _circleSig(
             2, keccak256(abi.encode(circle.ORDER_TYPEHASH(), who[2], uint256(2), uint256(exp), circle.nonces(who[2]), dl))
         );
-        BiuWuiCircle.PermitSig memory p;
+        SovereignCircle.PermitSig memory p;
         p.deadline = dl;
         (p.v, p.r, p.s) = vm.sign(
             key[2],

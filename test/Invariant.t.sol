@@ -2,20 +2,20 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
-import {BiuWuiFactory} from "../src/BiuWuiFactory.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
+import {SovereignFactory} from "../src/SovereignFactory.sol";
 import {MockUSD8} from "./mocks/MockUSD8.sol";
 
 /// @dev Drives one circle through random sequences of every public action.
 contract Handler is Test {
-    BiuWuiCircle public circle;
+    SovereignCircle public circle;
     MockUSD8 public usd;
     address[] public people;
     uint256 public calls;
     uint256 public releases;
     uint256 public joins;
 
-    constructor(BiuWuiCircle c, MockUSD8 u, address[] memory p) {
+    constructor(SovereignCircle c, MockUSD8 u, address[] memory p) {
         circle = c;
         usd = u;
         people = p;
@@ -112,8 +112,8 @@ contract Handler is Test {
     /// One step that moves the circle forward; listed several times so random runs go deep.
     function _advance(uint256 seed) internal {
         calls++;
-        BiuWuiCircle.Phase ph = circle.phase();
-        if (ph == BiuWuiCircle.Phase.Forming) {
+        SovereignCircle.Phase ph = circle.phase();
+        if (ph == SovereignCircle.Phase.Forming) {
             for (uint256 i; i < people.length; ++i) {
                 address m = people[(seed + i) % people.length];
                 if (circle.isMember(m)) continue;
@@ -127,9 +127,9 @@ contract Handler is Test {
             }
             return;
         }
-        if (ph != BiuWuiCircle.Phase.Running) return;
+        if (ph != SovereignCircle.Phase.Running) return;
         uint256 r = circle.currentRound();
-        BiuWuiCircle.Round memory rd = circle.getRound(r);
+        SovereignCircle.Round memory rd = circle.getRound(r);
         address[] memory ms = circle.members();
         if (!rd.closed && block.timestamp <= rd.bidEnd) {
             for (uint256 i; i < ms.length; ++i) {
@@ -170,7 +170,7 @@ contract Handler is Test {
 
 contract InvariantTest is Test {
     MockUSD8 internal usd;
-    BiuWuiCircle internal circle;
+    SovereignCircle internal circle;
     Handler internal handler;
     address internal organiser = makeAddr("organiser");
     address[] internal people;
@@ -178,7 +178,7 @@ contract InvariantTest is Test {
 
     function setUp() public {
         usd = new MockUSD8();
-        BiuWuiFactory factory = new BiuWuiFactory(address(usd), address(new BiuWuiCircle()));
+        SovereignFactory factory = new SovereignFactory(address(usd), address(new SovereignCircle()));
         for (uint256 i; i < 6; ++i) {
             address a = makeAddr(string(abi.encodePacked("p", vm.toString(i))));
             people.push(a);
@@ -187,7 +187,7 @@ contract InvariantTest is Test {
         supply = usd.totalSupply();
         vm.prank(organiser);
         circle = factory.createCircle(
-            BiuWuiCircle.Params({
+            SovereignCircle.Params({
                 token: address(usd),
                 share: 10e6,
                 size: 4,

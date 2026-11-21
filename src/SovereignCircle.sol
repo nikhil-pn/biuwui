@@ -7,8 +7,8 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IStablecoin} from "./interfaces/IStablecoin.sol";
 
-/// @title BiuWuiCircle
-/// @notice One Biu Wui (標會), a savings circle where members bid for the pot. Every round each member
+/// @title SovereignCircle
+/// @notice One Sovereign circle: a savings circle where members bid for the pot. Every round each member
 /// pays the same share. Members bid the discount they accept, the highest discount takes the pot, and
 /// the discount is shared out as a dividend to everyone. Each member gets the pot exactly once.
 ///
@@ -23,7 +23,7 @@ import {IStablecoin} from "./interfaces/IStablecoin.sol";
 /// - Joining is a pledge: the first share is paid on joining. If the circle is not full by `joinBy`,
 ///   anyone can cancel it and every pledge goes back.
 /// - If a round stalls, any member can dissolve the circle and the money left goes back pro rata.
-contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
+contract SovereignCircle is EIP712, Nonces, ReentrancyGuard {
     // ---------------------------------------------------------------- limits
 
     /// @notice At most 50 members, so every per-member loop stays cheap.
@@ -53,8 +53,8 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
     bytes32 public constant LEAVE_TYPEHASH = keccak256("Leave(address member,uint256 nonce,uint256 deadline)");
 
     /// @dev Tags that bind an EIP-3009 authorization to one action in this circle.
-    bytes32 private constant JOIN_TAG = keccak256("BIUWUI-JOIN-V1");
-    bytes32 private constant PAY_TAG = keccak256("BIUWUI-PAY-V1");
+    bytes32 private constant JOIN_TAG = keccak256("SOVEREIGN-JOIN-V1");
+    bytes32 private constant PAY_TAG = keccak256("SOVEREIGN-PAY-V1");
 
     // ---------------------------------------------------------------- types
 
@@ -248,7 +248,7 @@ contract BiuWuiCircle is EIP712, Nonces, ReentrancyGuard {
     // ---------------------------------------------------------------- setup
 
     /// @dev The implementation itself can never be initialized; only its clones can, once each.
-    constructor() EIP712("Biu Wui", "1") {
+    constructor() EIP712("Sovereign", "1") {
         initialized = true;
     }
 

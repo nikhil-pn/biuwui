@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {BiuWuiBase} from "./BiuWuiBase.t.sol";
-import {BiuWuiCircle} from "../src/BiuWuiCircle.sol";
+import {SovereignBase} from "./SovereignBase.t.sol";
+import {SovereignCircle} from "../src/SovereignCircle.sol";
 
 /// Confirmation of payee, on chain: each member's pot goes to a named, locked payee. A change waits
 /// `payeeDelay`, is visible to every member meanwhile, and can be cancelled without gas.
-contract PayeeLockTest is BiuWuiBase {
+contract PayeeLockTest is SovereignBase {
     address internal thief = makeAddr("thief");
 
     function setUp() public override {
@@ -75,20 +75,20 @@ contract PayeeLockTest is BiuWuiBase {
 
     function test_CancelWithoutPendingReverts() public {
         vm.prank(people[2]);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.NoPendingPayee.selector, people[2]));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.NoPendingPayee.selector, people[2]));
         circle.cancelPayeeChange();
     }
 
     function test_RelayerCannotAlterSignedPayee() public {
         uint256 deadline = block.timestamp + 1 hours;
         bytes memory sig = sigPayee(0, makeAddr("good"), "Ah Ming", deadline);
-        vm.expectRevert(BiuWuiCircle.BadSignature.selector);
+        vm.expectRevert(SovereignCircle.BadSignature.selector);
         circle.requestPayeeChangeWithSig(people[0], thief, "Ah Ming", deadline, sig);
     }
 
     function test_NonMemberCannotRequest() public {
         vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(BiuWuiCircle.NotMember.selector, thief));
+        vm.expectRevert(abi.encodeWithSelector(SovereignCircle.NotMember.selector, thief));
         circle.requestPayeeChange(thief, "x");
     }
 }

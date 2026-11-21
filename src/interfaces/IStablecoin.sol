@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @notice The parts of tUSD8 (QDay Aevum testnet, USDC-style, 6 decimals) that Biu Wui uses:
+/// @notice The parts of tUSD8 (QDay Aevum testnet, USDC-style, 6 decimals) that Sovereign uses:
 /// plain ERC-20, EIP-2612 `permit` (for standing orders) and EIP-3009 `receiveWithAuthorization`
 /// (for gasless pledges and payments).
 interface IStablecoin is IERC20 {
