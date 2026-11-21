@@ -41,7 +41,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .num .dec { color: var(--faint); }
 
 /* The Sovereign mark: a gold crown on an ink badge. */
-.cjk { font-family: "PingFang HK", "PingFang TC", "Hiragino Sans", "Noto Sans CJK TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; font-weight: 700; letter-spacing: 0; line-height: 1; }
 .brand .mark { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: #e8c3a2; }
 .icon-btn .mark { display: inline-grid; place-items: center; color: var(--ink); }
 a.icon-btn { text-decoration: none; }
