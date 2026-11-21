@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Biu Wui app (web-app/, deployed as app.biuwui.exprmnts.fun): bundle the TypeScript, copy the styles
+# Build the Sovereign app (web-app/, deployed as app.sovereign.exprmnts.fun): bundle the TypeScript, copy the styles
 # and fonts it shares with the site (web/), and bundle the serverless API (api/) next to it. Run before every app deploy.
 set -euo pipefail
 cd "$(dirname "$0")/.."

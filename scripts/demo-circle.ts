@@ -1,7 +1,7 @@
-// Runs one whole Biu Wui circle on QDay Aevum testnet, end to end, and records every transaction.
+// Runs one whole Sovereign circle on QDay Aevum testnet, end to end, and records every transaction.
 // Three members (Ah Ming, Kitty, Wing) never spend gas: they only sign. The ops wallet relays.
 //
-//   npx tsx scripts/demo-circle.ts            (keys come from ~/.config/biuwui/accounts.json)
+//   npx tsx scripts/demo-circle.ts            (keys come from ~/.config/sovereign/accounts.json)
 //
 // Proof is written to docs/proof/<circle>.json and printed as explorer links.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -13,7 +13,7 @@ import { aevum, FACTORY, TUSD8, publicClient, walletFor, tusd8Abi, explorerTx, e
 import { actionTypes, circleDomain, joinNonce, nowSec, payNonce, permitTypes, receiveTypes, tusd8Domain, vrs } from "./lib/sign";
 
 type Keys = Record<string, { address: Address; privateKey: Hex }>;
-const keys: Keys = JSON.parse(readFileSync(`${homedir()}/.config/biuwui/accounts.json`, "utf8"));
+const keys: Keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
 const ops = walletFor(keys.ops.privateKey);
 const people = [
   { id: "ahming", name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey) },
@@ -21,7 +21,7 @@ const people = [
   { id: "wing", name: "Wing", acct: privateKeyToAccount(keys.wing.privateKey) },
 ];
 
-const SHARE = parseUnits("0.5", 6); // 0.5 tUSD8
+const SHARE = parseUnits("0.25", 6); // 0.25 tUSD8
 const ROUND = 75; // seconds of bidding per round (short, for a live demo)
 const proof: { step: string; tx: Hex; url: string }[] = [];
 const fmt = (v: bigint) => `${formatUnits(v, 6)} tUSD8`;
@@ -56,7 +56,7 @@ async function main() {
   }
 
   // 1. open a circle
-  const rc = await send("Open circle 'Sham Shui Po Biu Wui' (3 members, 0.5 tUSD8 a round)", () =>
+  const rc = await send("Open circle 'Family Circle' (3 members, 0.25 tUSD8 a round)", () =>
     ops.writeContract({
       address: FACTORY,
       abi: factoryAbi,
@@ -75,7 +75,7 @@ async function main() {
           feeBps: 100,
           quorumBps: 6000,
           securityBps: 5000,
-          name: "Sham Shui Po Biu Wui",
+          name: "Family Circle",
         },
       ],
     }),

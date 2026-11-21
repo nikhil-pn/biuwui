@@ -1,4 +1,4 @@
-// POST /api/faucet — 0.03 tUSD8 of starter money for people trying Biu Wui (enough for a practice circle).
+// POST /api/faucet — 0.03 tUSD8 of starter money for people trying Sovereign (enough for a practice circle).
 // Once per address, 3 per IP per day, only if the address holds less than 0.03 tUSD8. See docs/API.md.
 import { ApiError, TUSD8, asAddress, body, clientIp, explorerTx, limit, publicClient, send, walletFromEnv, type Req, type Res } from "./lib/shared";
 

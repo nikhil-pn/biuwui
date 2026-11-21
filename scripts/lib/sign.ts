@@ -1,4 +1,4 @@
-// Builds every message a Biu Wui member signs. Wallets show these as readable EIP-712 data.
+// Builds every message a Sovereign member signs. Wallets show these as readable EIP-712 data.
 import { keccak256, toBytes, type Address, type Hex, encodeAbiParameters, parseSignature } from "viem";
 import { aevum, TUSD8 } from "./aevum";
 
@@ -6,9 +6,9 @@ import { aevum, TUSD8 } from "./aevum";
 export const tusd8Domain = (chainId = aevum.id, token: Address = TUSD8) =>
   ({ name: "tUSD8", version: "2", chainId, verifyingContract: token }) as const;
 
-/** Biu Wui's EIP-712 domain, one per circle. */
+/** Sovereign's EIP-712 domain, one per circle. */
 export const circleDomain = (circle: Address, chainId = aevum.id) =>
-  ({ name: "Biu Wui", version: "1", chainId, verifyingContract: circle }) as const;
+  ({ name: "Sovereign", version: "1", chainId, verifyingContract: circle }) as const;
 
 export const receiveTypes = {
   ReceiveWithAuthorization: [
@@ -76,9 +76,9 @@ export const actionTypes = {
   ],
 } as const;
 
-/** Same nonces as BiuWuiCircle.joinNonce / payNonce, computed off-chain (the contract views agree). */
-const JOIN_TAG = keccak256(toBytes("BIUWUI-JOIN-V1"));
-const PAY_TAG = keccak256(toBytes("BIUWUI-PAY-V1"));
+/** Same nonces as SovereignCircle.joinNonce / payNonce, computed off-chain (the contract views agree). */
+const JOIN_TAG = keccak256(toBytes("SOVEREIGN-JOIN-V1"));
+const PAY_TAG = keccak256(toBytes("SOVEREIGN-PAY-V1"));
 export const joinNonce = (circle: Address, member: Address, payout: Address, name: string) =>
   keccak256(
     encodeAbiParameters(

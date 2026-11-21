@@ -441,7 +441,7 @@ export const circleAbi = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Round",
+        "internalType": "struct SovereignCircle.Round",
         "components": [
           {
             "name": "start",
@@ -547,7 +547,7 @@ export const circleAbi = [
       {
         "name": "p",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Params",
+        "internalType": "struct SovereignCircle.Params",
         "components": [
           {
             "name": "token",
@@ -747,7 +747,7 @@ export const circleAbi = [
       {
         "name": "auth",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Authorization",
+        "internalType": "struct SovereignCircle.Authorization",
         "components": [
           {
             "name": "validAfter",
@@ -1050,7 +1050,7 @@ export const circleAbi = [
       {
         "name": "auth",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Authorization",
+        "internalType": "struct SovereignCircle.Authorization",
         "components": [
           {
             "name": "validAfter",
@@ -1157,7 +1157,7 @@ export const circleAbi = [
       {
         "name": "",
         "type": "uint8",
-        "internalType": "enum BiuWuiCircle.Phase"
+        "internalType": "enum SovereignCircle.Phase"
       }
     ],
     "stateMutability": "view"
@@ -1469,7 +1469,7 @@ export const circleAbi = [
       {
         "name": "permit",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.PermitSig",
+        "internalType": "struct SovereignCircle.PermitSig",
         "components": [
           {
             "name": "deadline",
@@ -1537,7 +1537,7 @@ export const circleAbi = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.StandingOrder",
+        "internalType": "struct SovereignCircle.StandingOrder",
         "components": [
           {
             "name": "expiresAt",
@@ -2462,12 +2462,12 @@ export const circleAbi = [
       {
         "name": "expected",
         "type": "uint8",
-        "internalType": "enum BiuWuiCircle.Phase"
+        "internalType": "enum SovereignCircle.Phase"
       },
       {
         "name": "actual",
         "type": "uint8",
-        "internalType": "enum BiuWuiCircle.Phase"
+        "internalType": "enum SovereignCircle.Phase"
       }
     ]
   },
@@ -2529,7 +2529,7 @@ export const factoryAbi = [
       {
         "name": "",
         "type": "address[]",
-        "internalType": "contract BiuWuiCircle[]"
+        "internalType": "contract SovereignCircle[]"
       }
     ],
     "stateMutability": "view"
@@ -2548,7 +2548,7 @@ export const factoryAbi = [
       {
         "name": "",
         "type": "address[]",
-        "internalType": "contract BiuWuiCircle[]"
+        "internalType": "contract SovereignCircle[]"
       }
     ],
     "stateMutability": "view"
@@ -2560,7 +2560,7 @@ export const factoryAbi = [
       {
         "name": "params",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Params",
+        "internalType": "struct SovereignCircle.Params",
         "components": [
           {
             "name": "token",
@@ -2629,7 +2629,7 @@ export const factoryAbi = [
       {
         "name": "circle",
         "type": "address",
-        "internalType": "contract BiuWuiCircle"
+        "internalType": "contract SovereignCircle"
       }
     ],
     "stateMutability": "nonpayable"
@@ -2641,7 +2641,7 @@ export const factoryAbi = [
       {
         "name": "params",
         "type": "tuple",
-        "internalType": "struct BiuWuiCircle.Params",
+        "internalType": "struct SovereignCircle.Params",
         "components": [
           {
             "name": "token",
@@ -2725,7 +2725,7 @@ export const factoryAbi = [
       {
         "name": "circle",
         "type": "address",
-        "internalType": "contract BiuWuiCircle"
+        "internalType": "contract SovereignCircle"
       }
     ],
     "stateMutability": "nonpayable"

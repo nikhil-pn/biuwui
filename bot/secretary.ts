@@ -1,4 +1,4 @@
-// The circle secretary: keeps every Biu Wui circle moving, so members never have to.
+// The circle secretary: keeps every Sovereign circle moving, so members never have to.
 //
 // Every few seconds, for each circle from the factories:
 //   - collects standing orders that are due (exactly one share, within the member's limits)
@@ -11,7 +11,7 @@
 // It holds a gas-only key. Everything it can call is either a member's own signature or a function anyone may
 // call, so it cannot move anyone's money anywhere the contract does not already allow.
 //
-//   npx tsx bot/secretary.ts        (keys from ~/.config/biuwui/accounts.json; systemd unit in bot/biuwui-secretary.service)
+//   npx tsx bot/secretary.ts        (keys from ~/.config/sovereign/accounts.json; systemd unit in bot/sovereign-secretary.service)
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { type Address, type Hex, formatUnits } from "viem";
@@ -19,15 +19,14 @@ import { privateKeyToAccount } from "viem/accounts";
 import { circleAbi, factoryAbi } from "../scripts/lib/abi";
 import { FACTORY, publicClient, walletFor, explorerTx } from "../scripts/lib/aevum";
 import { actionTypes, circleDomain, joinNonce, payNonce, receiveTypes, tusd8Domain, vrs } from "../scripts/lib/sign";
-import deployment from "../deployments/aevum.json" with { type: "json" };
 
-const keys = JSON.parse(readFileSync(process.env.BIUWUI_KEYS ?? `${homedir()}/.config/biuwui/accounts.json`, "utf8"));
+const keys = JSON.parse(readFileSync(process.env.SOVEREIGN_KEYS ?? `${homedir()}/.config/sovereign/accounts.json`, "utf8"));
 const secretary = walletFor(keys.secretary.privateKey as Hex);
 const demo = [
   { name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey as Hex) },
   { name: "Kitty", acct: privateKeyToAccount(keys.kitty.privateKey as Hex) },
 ];
-const FACTORIES = [FACTORY, (deployment as { factoryV1?: { address: string } }).factoryV1?.address].filter(Boolean) as Address[];
+const FACTORIES = [FACTORY] as Address[];
 const TICK_MS = Number(process.env.TICK_MS ?? 8000);
 const PRACTICE = "Practice · ";
 const Phase = { Forming: 0, Running: 1, Completed: 2, Dissolved: 3, Cancelled: 4 } as const;

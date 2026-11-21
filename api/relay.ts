@@ -1,4 +1,4 @@
-// POST /api/relay — submits a member's signed Biu Wui action and pays the gas. See docs/API.md.
+// POST /api/relay — submits a member's signed Sovereign action and pays the gas. See docs/API.md.
 //
 // Rails (modelled on the Aevum Starter Kit relayer, MIT, PQA Labs):
 //  - allow-list of functions; only the factory or circles the factory created (isCircle)
@@ -146,7 +146,7 @@ export default async function handler(req: Req, res: Res) {
       if (to.toLowerCase() !== FACTORY.toLowerCase()) throw new ApiError(400, "NOT_ALLOWED", "Unknown factory.");
     } else {
       const ok = await publicClient.readContract({ address: FACTORY, abi: factoryAbi, functionName: "isCircle", args: [to] });
-      if (!ok) throw new ApiError(400, "NOT_ALLOWED", "That is not a Biu Wui circle.");
+      if (!ok) throw new ApiError(400, "NOT_ALLOWED", "That is not a Sovereign circle.");
     }
 
     const abi = rule.on === "factory" ? factoryAbi : circleAbi;

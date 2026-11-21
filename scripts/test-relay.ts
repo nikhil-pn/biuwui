@@ -11,7 +11,7 @@ import { FACTORY, publicClient } from "./lib/aevum";
 import { factoryAbi, circleAbi } from "./lib/abi";
 import { actionTypes, joinNonce, nowSec, receiveTypes, tusd8Domain, circleDomain, vrs } from "./lib/sign";
 
-const keys = JSON.parse(readFileSync(`${homedir()}/.config/biuwui/accounts.json`, "utf8"));
+const keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
 const org = privateKeyToAccount(keys.siumei.privateKey);
 const kitty = privateKeyToAccount(keys.kitty.privateKey);
 let n = 0;
@@ -37,7 +37,7 @@ async function main() {
   const params = { token: "0x456569838f1d43009A91ebA4263147Afd7233483" as Address, share: 10000n, size: 3, joinWindow: 3600, roundLength: 120, graceLength: 900, payeeDelay: 300, maxDiscountBps: 3000, feeBps: 100, quorumBps: 6000, securityBps: 5000, name: "Practice · Relay test" };
   const deadline = nowSec() + 1800n;
   const nonce = await publicClient.readContract({ address: FACTORY, abi: factoryAbi, functionName: "nonces", args: [org.address] });
-  const sig = await org.signTypedData({ domain: { name: "Biu Wui Factory", version: "1", chainId: 44005, verifyingContract: FACTORY }, types: openTypes, primaryType: "OpenCircle",
+  const sig = await org.signTypedData({ domain: { name: "Sovereign Factory", version: "1", chainId: 44005, verifyingContract: FACTORY }, types: openTypes, primaryType: "OpenCircle",
     message: { organiser: org.address, ...params, nonce, deadline } as never });
 
   let r = await call(relay, { target: FACTORY, fn: "createCircleWithSig", args: [params, org.address, deadline, sig] });
