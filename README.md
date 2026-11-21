@@ -4,7 +4,8 @@
 only go to a named and locked payee, and nobody (not even the organiser) can run away with the money.**
 
 > Built for the QDay **Aevum Builder Challenge #1** (DoraHacks), Crowdfunding track.
-> Submission deadline: **11 Dec 2026, 16:00 HKT (08:00 UTC)**. Status: building (contracts and tests done).
+> Submission deadline: **11 Dec 2026, 16:00 HKT (08:00 UTC)**. Status: **live on Aevum testnet** (contracts verified, a full
+> gasless circle run on chain: [`docs/PROOF.md`](docs/PROOF.md)). App, relayer and secretary bot in progress.
 
 A Biu Wui (標會, Cantonese for "bidding association") is how families and small shops in Hong Kong and across Asia
 have saved and borrowed for generations: everyone pays the same amount each round, and each round one member takes
@@ -26,6 +27,13 @@ or the pot goes to the wrong person. Biu Wui moves the rules into a contract on 
 | Members have no gas token | Every action is a **signature** (EIP-3009, EIP-712, EIP-2612); a relayer submits it. |
 
 Full rules: [`docs/RULES.md`](docs/RULES.md).
+
+## Live on Aevum testnet (chain 44005)
+| | |
+|---|---|
+| Factory (verified) | [`0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89`](https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89) |
+| Circle implementation (verified) | [`0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf`](https://explorer-test.qday.info/address/0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf) |
+| First full circle (32 txs, members spent 0 gas) | [`0xfFd7…a1F2`](https://explorer-test.qday.info/address/0xfFd7334858a51C528E945C9587eFE3b5e0C6a1F2) · [all transactions](docs/PROOF.md) |
 
 ## Run it
 Needs [Foundry](https://book.getfoundry.sh) and Node 22+.
