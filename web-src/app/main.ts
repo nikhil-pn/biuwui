@@ -1090,13 +1090,15 @@ function profileSheet() {
       <div class="profile">
         <div class="pf-head"><span class="pav me big">You</span><div><h2>${w?.kind === "injected" ? "Your wallet" : "Your test wallet"}</h2>${w ? `<button class="addr" data-copy="${w.address}">${short(w.address)} <span>copy</span></button>` : "<p class=muted>No wallet yet</p>"}</div></div>
         ${w && s ? `<div class="pf-stats"><div class="glass"><span>Test dollars</span><b>${money(s.bal)}</b></div><div class="glass"><span>Gas you pay</span><b>None</b></div><div class="glass"><span>Wallet</span><b>${w.kind === "injected" ? "Connected" : "This browser"}</b></div></div>` : ""}
+        ${DEMO
+          ? `<button class="pf-mode glass" data-p="to-live"><span class="mi">${MI.live}</span><span class="txt"><b>You're in demo mode</b><span>Bots and free test money. Tap to go back to live mode.</span></span><i>›</i></button>`
+          : `<button class="pf-mode glass" data-p="to-demo"><span class="mi">${MI.demo}</span><span class="txt"><b>Try demo mode</b><span>Free test money and two bot friends. Play full rounds in minutes.</span></span><i>›</i></button>`}
         <nav class="menu glass">
           <button data-p="how"><span class="mi">${MI.how}</span>How it works<i>›</i></button>
           <button data-p="security"><span class="mi">${MI.shield}</span>Who can move the pot<i>›</i></button>
           <button data-p="keys"><span class="mi">${MI.key}</span>Your wallet<i>›</i></button>
           ${!DEMO && w ? `<button data-p="fund"><span class="mi">${MI.plus}</span>Add test money<i>›</i></button>` : ""}
           ${!DEMO && w?.kind === "burner" ? `<button data-p="secret"><span class="mi">${MI.key}</span>Back up this wallet<i>›</i></button>` : ""}
-          ${DEMO ? `<button data-p="to-live"><span class="mi">${MI.live}</span>Switch to live mode<i>›</i></button>` : `<button data-p="to-demo"><span class="mi">${MI.demo}</span>Switch to demo mode<i>›</i></button>`}
           <button data-p="proof"><span class="mi">${MI.ok}</span>Proof on chain<i>›</i></button>
           <a href="${SITE}/live" target="_blank" rel="noopener"><span class="mi">${MI.live}</span>Watch circles live<i>↗</i></a>
           <button data-p="install"><span class="mi">${MI.down}</span>Add Sovereign to your home screen<i>›</i></button>
@@ -1247,11 +1249,6 @@ document.addEventListener("click", (e) => {
   }
 });
 $("profile-btn").addEventListener("click", () => profileSheet());
-for (const b of document.querySelectorAll<HTMLButtonElement>("#mode-seg [data-mode]")) {
-  const on = (b.dataset.mode === "demo") === DEMO;
-  b.setAttribute("aria-checked", String(on));
-  b.addEventListener("click", () => !on && switchMode(b.dataset.mode as Mode));
-}
 $("circle-pill").addEventListener("click", () => (w ? circlesSheet() : DEMO ? setupFlow() : undefined));
 $("dock-plus").addEventListener("click", () => (w ? startFlow() : DEMO ? setupFlow() : undefined));
 
