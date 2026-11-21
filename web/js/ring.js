@@ -1,6 +1,8 @@
 // The circle drawn as it is: the pot in the middle, members around it, coins moving between them.
 // Used live in the app (one real round) and as a looping explainer on the How page and in the app.
 
+const STAR = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.4 6L12 16.2 6.5 19.3l1.4-6L3.3 9.2l6.1-.6Z"/></svg>';
+const TICK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10"/></svg>';
 const html = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 /**
@@ -41,7 +43,9 @@ export function createRing(el) {
       node.className = "ring-m" + (m.me ? " me" : "") + (m.paid ? " paid" : "") + (m.winner ? " winner" : "") + (m.approved ? " approved" : "");
       node.querySelector(".ring-av").textContent = m.me ? "You" : (m.name || "?")[0];
       node.querySelector(".ring-name").innerHTML = html(m.me ? "You" : m.name);
-      node.querySelector(".ring-badge").textContent = m.bid ? m.bid : m.winner ? "★" : m.approved ? "✓" : "";
+      const badge = node.querySelector(".ring-badge");
+      if (m.bid) badge.textContent = m.bid;
+      else badge.innerHTML = m.winner ? STAR : m.approved ? TICK : "";
       node.querySelector(".ring-badge").className = "ring-badge" + (m.bid ? " bid" : m.winner ? " star" : m.approved ? " tick" : "");
     });
   }
