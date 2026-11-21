@@ -443,9 +443,9 @@ function circleView(addr: Address) {
       me: same(m.address, wallet?.address),
       bot: isBot(m),
       paid: c!.phase <= 1 && m.paid,
-      won: m.won && !(rd?.closed && same(rd.winner, m.address)),
-      winner: Boolean(rd?.closed && !rd.released && same(rd.winner, m.address)),
-      approved: Boolean(rd?.closed && m.approved),
+      won: m.won && !(c!.phase === 1 && rd?.closed && !rd.released && same(rd.winner, m.address)),
+      winner: Boolean(c!.phase === 1 && rd?.closed && !rd.released && same(rd.winner, m.address)),
+      approved: Boolean(c!.phase === 1 && rd?.closed && !rd.released && m.approved),
       bid: rd && !rd.closed && same(rd.bestBidder, m.address) && rd.bestDiscount > 0n ? `−${fmt(rd.bestDiscount)}` : null,
     }));
     for (let i = ms.length; i < c.size; i++) ms.push({ name: "", empty: true });
