@@ -92,7 +92,7 @@ function describe(name, log, names, quorum) {
     case "Dissolved": return [ICON.stop, "fail", "Circle dissolved, members refunded pro rata", circle];
     case "Cancelled": return [ICON.stop, "fail", "The circle did not fill: every pledge refunded", circle];
     case "SecurityApplied": return [ICON.shield, "", `${who(topicAddr(t[2]))}'s share covered from their security`, rd(topicNum(t[1]))];
-    case "PayeeChangeRequested": return [ICON.warn, "fail", `${who(topicAddr(t[1]))} asked to send their pot to ${dataString(d, 1)}`, `takes effect at ${time(Number(w(d, 2)))}, cancellable · ${circle}`];
+    case "PayeeChangeRequested": return [ICON.warn, "fail", `${who(topicAddr(t[1]))} asked to send ${who(topicAddr(t[1])) === "You" ? "your" : "their"} pot to ${dataString(d, 1)}`, `takes effect at ${time(Number(w(d, 2)))}, cancellable · ${circle}`];
     case "PayeeChangeCancelled": return [ICON.lock, "", `${who(topicAddr(t[1]))} cancelled a payee change`, circle];
     case "PayeeChanged": return [ICON.lock, "", `${who(topicAddr(t[1]))}'s payee is now ${dataString(d, 1)}`, `${dataAddr(d, 0).slice(0, 6)}…${dataAddr(d, 0).slice(-4)} · ${circle}`];
     case "StandingOrderSet": return [ICON.repeat, "", `${who(topicAddr(t[1]))} set a standing order`, `one share a round, at most ${Number(w(d, 0))} rounds · ${circle}`];

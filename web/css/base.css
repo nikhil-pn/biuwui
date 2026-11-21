@@ -44,3 +44,4 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .cjk { font-family: "PingFang HK", "PingFang TC", "Hiragino Sans", "Noto Sans CJK TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; font-weight: 700; letter-spacing: 0; line-height: 1; }
 .brand .cjk { font-size: 15px; padding: 5px 6px; border-radius: 8px; background: var(--ink); color: #e8c3a2; }
 .icon-btn .cjk { font-size: 12px; color: var(--ink); }
+a.icon-btn { text-decoration: none; }
