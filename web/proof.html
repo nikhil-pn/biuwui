@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Proof · Biu Wui 標會</title>
+  <meta name="description" content="Verified Biu Wui contracts on QDay Aevum testnet and a whole gasless circle: 32 transactions, members spent 0 gas.">
+  <meta name="theme-color" content="#f4ede1">
+  <meta property="og:title" content="Biu Wui 標會 · bid for the pot, together">
+  <meta property="og:description" content="A savings circle where members bid for the pot. In tUSD8 on QDay Aevum. Nobody needs gas, and nobody can run off with the pot.">
+  <meta property="og:image" content="/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" data-cjk-font href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Serif+JP:wght@700&display=swap&text=%E4%B8%80%E4%B8%8A%E4%B8%AD%E4%BA%8B%E4%BB%98%E4%BE%86%E4%BE%9B%E4%BF%9D%E5%80%8B%E5%80%91%E5%85%A5%E5%85%A8%E5%87%86%E5%87%BA%E5%88%A9%E5%89%87%E5%8D%B0%E5%8F%96%E5%90%88%E5%90%8D%E5%A7%8B%E5%A8%81%E5%AD%90%E5%AE%89%E5%AE%8C%E5%B7%B2%E6%88%91%E6%89%B9%E6%8E%88%E6%94%B6%E6%94%BE%E6%95%A3%E6%96%87%E6%98%8E%E6%98%AF%E6%99%82%E6%9C%83%E6%9C%88%E6%9C%A8%E6%9E%9C%E6%A8%99%E6%AC%8A%E6%AC%BE%E6%AF%8D%E6%AF%8F%E6%B0%B4%E6%B2%B9%E6%B6%88%E7%94%B1%E7%99%BD%E7%9B%B4%E7%9F%A9%E7%A4%BA%E7%A9%8D%E7%AB%A0%E7%AF%84%E7%B0%BD%E7%B4%84%E7%B4%B0%E7%B5%90%E7%B9%BC%E8%84%85%E8%93%8B%E8%A6%8F%E8%A9%A6%E8%AA%AA%E8%AD%89%E8%BC%AA%E9%80%80%E9%87%8F%E9%8F%88%E9%96%8B%E9%99%90%E9%A0%BC%EA%B3%84">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/glass.css">
+  <link rel="stylesheet" href="/css/chop.css">
+  <link rel="stylesheet" href="/css/ring.css">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body class="has-sticky">
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="nav-wrap">
+    <nav class="nav glass sheen" aria-label="Main">
+      <a class="brand" href="/"><span class="mark" data-chop="標會"></span>Biu Wui</a>
+      <div class="nav-links">
+        <a href="/how">How it works</a>
+        <a href="/proof">Proof</a>
+        <a href="/security">Security</a>
+        <a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <a class="btn-red" href="/app">Try it — no wallet needed</a>
+      <button class="nav-menu" aria-label="Menu" aria-expanded="false" aria-controls="nav-sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
+    </nav>
+    <div class="nav-sheet glass strong" id="nav-sheet" hidden>
+      <a href="/how">How it works</a>
+      <a href="/proof">Proof</a>
+      <a href="/security">Security</a>
+      <a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn-red" href="/app">Try it — no wallet needed</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-head">
+      <p class="eyebrow"><span class="cjk">證明</span> Everything here can be checked on the explorer</p>
+      <h1>Proof on QDay Aevum</h1>
+      <p class="lede">Contracts are verified on the Aevum explorer (chain 44005). A whole circle ran on chain: 3 members, 3 rounds, 32 transactions, and the members spent <strong>0 gas</strong>.</p>
+      <p style="margin-top:18px"><span class="live-chip glass"><span class="dot"></span>Aevum testnet block <span class="num" data-live-block>–</span></span></p>
+    </section>
+
+    <section class="block" style="margin-top:40px">
+      <div class="block-head"><div><span class="cjk-tag">合約</span><h2>Contracts</h2></div></div>
+      <div class="table-card glass">
+        <table class="tbl stack">
+          <thead><tr><th>What</th><th>Address</th></tr></thead>
+          <tbody>
+            <tr><td>BiuWuiFactory (verified, current: gasless open)</td><td class="mono"><a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA ↗</a></td></tr>
+            <tr><td>BiuWuiFactory v1 (verified, opened the demo circle)</td><td class="mono"><a href="https://explorer-test.qday.info/address/0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89" target="_blank" rel="noopener">0xAEcA0Beb9eCEDBe45dBB2fe74524dE31dDf0aa89 ↗</a></td></tr>
+            <tr><td>BiuWuiCircle implementation (verified)</td><td class="mono"><a href="https://explorer-test.qday.info/address/0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf" target="_blank" rel="noopener">0x1F8E90464604e4fEC47D915525B0e9E61dD6bBDf ↗</a></td></tr>
+            <tr><td>tUSD8 (QDay's test stablecoin)</td><td class="mono"><a href="https://explorer-test.qday.info/address/0x456569838f1d43009A91ebA4263147Afd7233483" target="_blank" rel="noopener">0x456569838f1d43009A91ebA4263147Afd7233483 ↗</a></td></tr>
+            <tr><td>Deploy transactions</td><td class="mono"><a href="https://explorer-test.qday.info/tx/0xbd721c5b33b687fb7cb4822b021294df47bcb6b2a81cc0422cb55b8df2b066c2" target="_blank" rel="noopener">implementation ↗</a> · <a href="https://explorer-test.qday.info/tx/0xb104166b8e0a92ed2869ca9fc5bd299235f67bf5355c51e59e95edaeb78e939c" target="_blank" rel="noopener">factory ↗</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div><span class="cjk-tag">一個會</span><h2>A whole circle, live</h2></div><a class="btn-glass" href="/app#circle=0xfFd7334858a51C528E945C9587eFE3b5e0C6a1F2">Open it in the app</a></div>
+      <p class="sub">Circle <span id="proof-circle"><code>0xfFd7…a1F2</code></span>, run <span id="proof-when">2026-11-21</span>: Sham Shui Po Biu Wui, 3 members (Ah Ming, Kitty, Wing), 0.5 tUSD8 a round, 75-second rounds for the demo.</p>
+      <div class="table-card glass">
+        <table class="tbl"><thead><tr><th class="n">#</th><th>Step</th><th>Transaction</th></tr></thead><tbody id="proof-steps"><tr><td colspan="3">Loading…</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div><span class="cjk-tag">結果</span><h2>Result</h2></div></div>
+      <div class="table-card glass">
+        <table class="tbl stack">
+          <thead><tr><th>Member</th><th>Started → ended</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Ah Ming</td><td class="num">1.5 → 1.528333 tUSD8</td><td>Never bid; earned dividends from Kitty's discount.</td></tr>
+            <tr><td>Kitty</td><td class="num">1.5 → 1.428334 tUSD8</td><td>Took the first pot early for a 0.1 discount.</td></tr>
+            <tr><td>Wing</td><td class="num">1.5 → 1.528333 tUSD8</td><td>Paid by standing order; earned dividends.</td></tr>
+            <tr><td>Organiser</td><td class="num">+0.015 tUSD8</td><td>1% fee, taken out of the discount.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="aside">Totals add up to 4.5 tUSD8: no money created or lost. Members' tQDAY (gas) balance before and after: 0.</p>
+    </section>
+
+    <footer class="foot">
+      <p>Biu Wui 標會 · built for QDay's <i>Aevum Builder Challenge #1</i> by Nikhil and Hina · MIT license</p>
+      <p><a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a> · <a href="/how">How it works</a> · <a href="/proof">Proof</a> · <a href="/security">Security</a> · <a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">Factory on the explorer</a></p>
+      <p class="fine">Testnet only. tUSD8 is QDay's test stablecoin and has no value. Not audited yet.</p>
+    </footer>
+    </main>
+  <a class="btn-red sticky-try" href="/app">Try it — no wallet needed</a>
+  <script type="module" src="/js/site.js"></script>
+</body>
+</html>

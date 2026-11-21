@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Security · Biu Wui 標會</title>
+  <meta name="description" content="Threats and controls in Biu Wui: no owner, locked payees, pledges, standing order caps, relayer rails, and the limits stated plainly.">
+  <meta name="theme-color" content="#f4ede1">
+  <meta property="og:title" content="Biu Wui 標會 · bid for the pot, together">
+  <meta property="og:description" content="A savings circle where members bid for the pot. In tUSD8 on QDay Aevum. Nobody needs gas, and nobody can run off with the pot.">
+  <meta property="og:image" content="/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" data-cjk-font href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Serif+JP:wght@700&display=swap&text=%E4%B8%80%E4%B8%8A%E4%B8%AD%E4%BA%8B%E4%BB%98%E4%BE%86%E4%BE%9B%E4%BF%9D%E5%80%8B%E5%80%91%E5%85%A5%E5%85%A8%E5%87%86%E5%87%BA%E5%88%A9%E5%89%87%E5%8D%B0%E5%8F%96%E5%90%88%E5%90%8D%E5%A7%8B%E5%A8%81%E5%AD%90%E5%AE%89%E5%AE%8C%E5%B7%B2%E6%88%91%E6%89%B9%E6%8E%88%E6%94%B6%E6%94%BE%E6%95%A3%E6%96%87%E6%98%8E%E6%98%AF%E6%99%82%E6%9C%83%E6%9C%88%E6%9C%A8%E6%9E%9C%E6%A8%99%E6%AC%8A%E6%AC%BE%E6%AF%8D%E6%AF%8F%E6%B0%B4%E6%B2%B9%E6%B6%88%E7%94%B1%E7%99%BD%E7%9B%B4%E7%9F%A9%E7%A4%BA%E7%A9%8D%E7%AB%A0%E7%AF%84%E7%B0%BD%E7%B4%84%E7%B4%B0%E7%B5%90%E7%B9%BC%E8%84%85%E8%93%8B%E8%A6%8F%E8%A9%A6%E8%AA%AA%E8%AD%89%E8%BC%AA%E9%80%80%E9%87%8F%E9%8F%88%E9%96%8B%E9%99%90%E9%A0%BC%EA%B3%84">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/glass.css">
+  <link rel="stylesheet" href="/css/chop.css">
+  <link rel="stylesheet" href="/css/ring.css">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body class="has-sticky">
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="nav-wrap">
+    <nav class="nav glass sheen" aria-label="Main">
+      <a class="brand" href="/"><span class="mark" data-chop="標會"></span>Biu Wui</a>
+      <div class="nav-links">
+        <a href="/how">How it works</a>
+        <a href="/proof">Proof</a>
+        <a href="/security">Security</a>
+        <a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <a class="btn-red" href="/app">Try it — no wallet needed</a>
+      <button class="nav-menu" aria-label="Menu" aria-expanded="false" aria-controls="nav-sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
+    </nav>
+    <div class="nav-sheet glass strong" id="nav-sheet" hidden>
+      <a href="/how">How it works</a>
+      <a href="/proof">Proof</a>
+      <a href="/security">Security</a>
+      <a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn-red" href="/app">Try it — no wallet needed</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-head">
+      <p class="eyebrow"><span class="cjk">安全</span> Threats, controls and limits</p>
+      <h1>Security</h1>
+      <p class="lede">A savings circle fails when someone holds the cash. In Biu Wui nobody does: the contract holds it, the rules can't change, and money only moves along fixed paths to each member's locked payee.</p>
+    </section>
+
+    <section class="block" style="margin-top:40px">
+      <div class="block-head"><div><span class="cjk-tag">威脅</span><h2>Threat → control</h2></div></div>
+      <div class="table-card glass">
+        <table class="tbl stack">
+          <thead><tr><th>Threat</th><th>Control in the contract</th></tr></thead>
+          <tbody>
+            <tr><td>The organiser runs off with the pot</td><td>No owner, no admin key, no upgrade. Circles are EIP-1167 clones of one verified implementation. The organiser's only income is a fee capped at 5% of the pot, and it comes out of the discount.</td></tr>
+            <tr><td>A winner takes the pot and stops paying</td><td>Part of each winner's pot (the circle's security share) is held back, never more than they still owe, and pays their later shares automatically at close.</td></tr>
+            <tr><td>A stolen key redirects the pot</td><td>Pots, refunds and dividends only go to the member's named, locked payee. A change waits the payee delay, is visible to every member, and is cancellable with one signature. The winner's payee is fixed when the auction closes.</td></tr>
+            <tr><td>A release nobody agreed to</td><td>Release needs approvals from more than half of the members (the circle's quorum). Members see the payee's name and address before they approve.</td></tr>
+            <tr><td>The circle never fills</td><td>Joining is a pledge. After the join deadline anyone can cancel an unfilled circle and every pledge is withdrawable in full.</td></tr>
+            <tr><td>A round stalls</td><td>After the grace period anyone can dissolve; everything left (except dividends earned) is refunded pro rata to net contributions.</td></tr>
+            <tr><td>A standing order drains a wallet</td><td>Exactly one share per round, at most N rounds, an expiry date, spender = this circle only, revocable with one signature.</td></tr>
+            <tr><td>The relayer changes a signed action</td><td>Every amount, round, payee and discount is inside the signature; any change makes it invalid. Nonces stop replays; the circle's address in every domain stops cross-circle reuse.</td></tr>
+            <tr><td>Bidding manipulation</td><td>Only members who paid this round and haven't won may bid; each bid must beat the best; the discount is capped (at most 40%).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div><span class="cjk-tag">中繼</span><h2>Relayer rails</h2></div></div>
+      <p class="sub">Members never send transactions. They sign; the app posts the signature to <code>/api/relay</code>; the relayer pays the gas. It is safe to leave open because:</p>
+      <div class="cards">
+        <div class="card glass"><span class="ico">限</span><h3>Allow-list</h3><p>Only the documented Biu Wui functions, only on the factory or on circles the factory confirms with <code>isCircle</code>. Anything else is refused.</p></div>
+        <div class="card glass"><span class="ico">試</span><h3>Simulate first</h3><p>Every call is simulated; a call that would revert is refused with a plain reason and never costs gas.</p></div>
+        <div class="card glass"><span class="ico">時</span><h3>Short signatures</h3><p>Authorisation windows and deadlines must be at most one hour ahead, so a leaked signature dies fast.</p></div>
+        <div class="card glass"><span class="ico">量</span><h3>Rate limits</h3><p>Per IP 30 calls / 10 min, per member 60 calls / day, and a global daily gas cap.</p></div>
+        <div class="card glass"><span class="ico">油</span><h3>Gas only</h3><p>The relayer key holds only tQDAY for gas, never stablecoins, and can only reach paths that already can't move a member's money anywhere but into their circle or to their own payee.</p></div>
+        <div class="card glass"><span class="ico">水</span><h3>Starter faucet</h3><p>0.03 tUSD8 once per address, 3 per IP a day, and only to addresses holding less than that.</p></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div><span class="cjk-tag">直說</span><h2>Limits, stated plainly</h2></div></div>
+      <div class="rules">
+        <div class="rule glass"><ul>
+          <li><b>Testnet only.</b> Biu Wui runs on QDay Aevum testnet with tUSD8, a test stablecoin with no value.</li>
+          <li><b>No audit yet.</b> The contracts have unit, fuzz, invariant and fork tests, but no external audit.</li>
+          <li><b>Rate limits are in memory</b> per server instance: fine for one instance, a shared store is needed before real traffic.</li>
+          <li><b>Names are self-declared, not KYC.</b> A payee name is what the member typed. It helps members spot a change; it does not prove identity.</li>
+          <li><b>The "try without a wallet" key lives in your browser</b> (localStorage). It is for testing only: anyone with access to this browser can use it.</li>
+          <li><b>Circles need a little trust.</b> Security covers a winner's later shares, but a member who never won and stops paying simply can't bid; the circle carries on without their share.</li>
+        </ul></div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>Biu Wui 標會 · built for QDay's <i>Aevum Builder Challenge #1</i> by Nikhil and Hina · MIT license</p>
+      <p><a href="https://github.com/nikhil-pn/biuwui" target="_blank" rel="noopener">GitHub</a> · <a href="/how">How it works</a> · <a href="/proof">Proof</a> · <a href="/security">Security</a> · <a href="https://explorer-test.qday.info/address/0xDD39a0B8020C8C18480a068D15Bf18B3e9Ef39EA" target="_blank" rel="noopener">Factory on the explorer</a></p>
+      <p class="fine">Testnet only. tUSD8 is QDay's test stablecoin and has no value. Not audited yet.</p>
+    </footer>
+    </main>
+  <a class="btn-red sticky-try" href="/app">Try it — no wallet needed</a>
+  <script type="module" src="/js/site.js"></script>
+</body>
+</html>
