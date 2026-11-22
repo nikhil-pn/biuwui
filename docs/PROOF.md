@@ -2,6 +2,9 @@
 
 Everything below can be checked on the explorer. Contract sources are verified there.
 
+**63 transactions in total:** [one whole circle](#1-a-whole-circle-live-2026-11-22-2116-utc) (29) and
+[the safety paths](#2-the-safety-paths-live-2026-11-22-2119-utc) (34). The raw records are in [`docs/proof/`](proof/).
+
 ## Contracts
 
 | What | Address |
@@ -58,14 +61,18 @@ Produced by `npx tsx scripts/demo-circle.ts`.
 | Wing | +0.030833 tUSD8 | paid by standing order; earned dividends |
 | Organiser | +0.0075 tUSD8 | 1% fee, taken out of the discount |
 
-The changes add up to zero: no money created or lost. Members' tQDAY balance before and after: **0**.
+The changes add up to zero: no money created or lost. Members' tQDAY balance before and after: **0**, and none of
+the three addresses has ever sent a transaction of its own (nonce 0), so every one of their actions was a relayed signature.
 
 ## 2. The safety paths, live (2026-11-22 21:19 UTC)
 
-Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a round, sent by the gas-only relayer key.
-
+Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a round, **34 transactions**, all sent by the
+gas-only relayer key; members only signed. Rows marked *check* are reads or a refused request, so they have no transaction.
+The raw record is [`docs/proof/edge-cases.json`](proof/edge-cases.json). D runs inside the same circle as C.
 
 ### A. Circle does not fill: pledges refunded
+
+Circle [`0xF8D680B3a537d223abA9ACe4C9Dd8c7296676Bd0`](https://explorer-test.qday.info/address/0xF8D680B3a537d223abA9ACe4C9Dd8c7296676Bd0) · 4 transactions
 
 | Step | Transaction |
 |---|---|
@@ -73,9 +80,11 @@ Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a
 | Ah Ming joins with a signed pledge | [0x429da636…](https://explorer-test.qday.info/tx/0x429da6360313c134390e44000fd2c8039a61267edbd6eba7e6b38c101842366a) |
 | Joining closed with 1 of 3 members: circle cancelled (anyone can call it) | [0xc5071cdb…](https://explorer-test.qday.info/tx/0xc5071cdb5625b9a3117b2486157898cd84a17ca5980307070b2dea0f80486e8f) |
 | Ah Ming's whole pledge paid back to his payee | [0x500051a4…](https://explorer-test.qday.info/tx/0x500051a48b9dd2021d0666cf5d3860fc3ec6ce6f2a129e370d62e8a256b45624) |
-| Refund check: Ah Ming got back 0.05 tUSD8 (his pledge was 0.05 tUSD8) | result |
+| Refund check: Ah Ming got back 0.05 tUSD8 (his pledge was 0.05 tUSD8) | check |
 
 ### B. Round stalls: circle dissolved, refunds pro rata
+
+Circle [`0x6559c6eE8F971213B8dc5d086932a357397fF4c9`](https://explorer-test.qday.info/address/0x6559c6eE8F971213B8dc5d086932a357397fF4c9) · 6 transactions
 
 | Step | Transaction |
 |---|---|
@@ -83,10 +92,12 @@ Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a
 | Ah Ming joins with a signed pledge | [0xa19f9469…](https://explorer-test.qday.info/tx/0xa19f9469cc39c4fb0907d78cf0e8171e94d32a8be2b4159fa8b0fcd2c5182a35) |
 | Kitty joins with a signed pledge | [0xe0d9b081…](https://explorer-test.qday.info/tx/0xe0d9b081160060e7816d2e03de383754aad4d3da0925fc23d312aa0d57c72dfd) |
 | Nobody closed round 1 within the grace period: circle dissolved (anyone can call it) | [0xbc18c28a…](https://explorer-test.qday.info/tx/0xbc18c28a3dc0d0338ba416e36e40831f444507aee4ace7db25a82dfb8ca11b22) |
-| Ah Ming's refund paid to his/her payee | [0x94490d03…](https://explorer-test.qday.info/tx/0x94490d0301940e341e42219ff684d7a18cf1aabeafdde9fb899cbe37b8ccfb42) |
-| Kitty's refund paid to his/her payee | [0x62d716b0…](https://explorer-test.qday.info/tx/0x62d716b0b4c99abcfb17eecc0ce3abe28fba36a2e3b3d23052676b3550d4b128) |
+| Ah Ming's refund paid to his payee | [0x94490d03…](https://explorer-test.qday.info/tx/0x94490d0301940e341e42219ff684d7a18cf1aabeafdde9fb899cbe37b8ccfb42) |
+| Kitty's refund paid to her payee | [0x62d716b0…](https://explorer-test.qday.info/tx/0x62d716b0b4c99abcfb17eecc0ce3abe28fba36a2e3b3d23052676b3550d4b128) |
 
 ### C. A past winner stops paying: held security pays the share
+
+Circle [`0xafb488219e5709a7fB0F7d0C3a3e1Fc0432B5D24`](https://explorer-test.qday.info/address/0xafb488219e5709a7fB0F7d0C3a3e1Fc0432B5D24) · 21 transactions
 
 | Step | Transaction |
 |---|---|
@@ -98,43 +109,13 @@ Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a
 | Round 1: Kitty approves the release | [0x9c77304e…](https://explorer-test.qday.info/tx/0x9c77304eaab29277d6055adba0cf3125fa1ea7ad677f59a7137484a3e8854f9d) |
 | Round 1: Wing approves the release | [0xf220f472…](https://explorer-test.qday.info/tx/0xf220f472f38cdb2b2e1d178e514eacc4dfe2247f1d48c8aab286e6f633f09f84) |
 | Round 1: pot released to the winner's locked payee | [0x7e7cc890…](https://explorer-test.qday.info/tx/0x7e7cc8900bf0b403e4172cb2c1096ea0c520b35fd4b2961eb0b6c4f83c3645c4) |
-| Ah Ming's held security after round 1: 0.075 tUSD8 | result |
-
-### D. Standing order revoked: it can no longer collect
-
-| Step | Transaction |
-|---|---|
-| Wing sets a standing order: 1 share a round, max 2 rounds, 1-day expiry | [0x7be8ebac…](https://explorer-test.qday.info/tx/0x7be8ebace8a0d4d61b7d36be2281517fd6d044b58b0dc50554279c4743147199) |
-| Round 2: the standing order collects Wing's share | [0xb85f2123…](https://explorer-test.qday.info/tx/0xb85f2123d7d680caa2e7490cfa681e6095d6cf871e52d51b2d68c95e38ef6d03) |
-
-### C. A past winner stops paying: held security pays the share
-
-| Step | Transaction |
-|---|---|
+| Ah Ming's held security after round 1: 0.075 tUSD8 | check |
 | Round 2: Kitty pays by signature | [0x7ba092e9…](https://explorer-test.qday.info/tx/0x7ba092e929dd40bbbc851203a1e6e45ffec3b2eb7256b237309cfb34b87842c6) |
 | Round 2: auction closed | [0xe3bc409d…](https://explorer-test.qday.info/tx/0xe3bc409d89ecad7cb5576e6e6fa321da7b7f29db55ffcc70ec3a2055f9a6c7c0) |
 | Round 2: Kitty approves the release | [0x23fbb34f…](https://explorer-test.qday.info/tx/0x23fbb34f0dd465332594dd08e980d4e674ec3415deb7b71448a1d1e6c9ae72fd) |
 | Round 2: Wing approves the release | [0xf61c8caf…](https://explorer-test.qday.info/tx/0xf61c8caf7ca0e2c2ed3c7e28f6a2eeda22162449de42b361bc29dd86926dbfc6) |
 | Round 2: pot released to the winner's locked payee | [0x98a640cf…](https://explorer-test.qday.info/tx/0x98a640cf2a1e1ee0770b9460c6c346d2fc92f8d00ab3db9cbbecdcffb314a769) |
-| Round 2 closed with Ah Ming unpaid: his security paid his share (security left 0.025 tUSD8, round 2 pot 0.15 tUSD8) | result |
-
-### D. Standing order revoked: it can no longer collect
-
-| Step | Transaction |
-|---|---|
-| Wing revokes the standing order with one signature | [0x4cfc00b1…](https://explorer-test.qday.info/tx/0x4cfc00b11a25663f7942cf3d2c6b5eb3ba679c47e762c3ec590383e3bf1eebde) |
-| Round 3: collecting again is refused by the contract (NoStandingOrder); no transaction is sent | result |
-
-### E. The relayer refuses what would revert
-
-| Step | Transaction |
-|---|---|
-| POST /api/relay closeAuction while round 3 bidding is open → HTTP 400 WOULD_REVERT: "Bidding is still open for this round." (simulated, refused, no gas spent) | result |
-
-### C. A past winner stops paying: held security pays the share
-
-| Step | Transaction |
-|---|---|
+| Round 2 closed with Ah Ming unpaid: his security paid his share (security left 0.025 tUSD8, round 2 pot 0.15 tUSD8) | check |
 | Round 3: Kitty pays by signature | [0xb85043ba…](https://explorer-test.qday.info/tx/0xb85043ba3bb6965f4484036e22935df5f87d27d43eea0869a45e7929f2fc10ec) |
 | Round 3: Wing pays by signature | [0x54bcdf94…](https://explorer-test.qday.info/tx/0x54bcdf943e6a5a5bb7b46e0413b3c58f7e77f541b05d70c21ea9262467388829) |
 | Round 3: auction closed | [0xda7c7006…](https://explorer-test.qday.info/tx/0xda7c7006a42e088b43973f4b9cf572d5ca1a4df4a0e77a1b6189407577c55d27) |
@@ -143,3 +124,22 @@ Produced by `npx tsx scripts/edge-proofs.ts`: three more circles at 0.05 tUSD8 a
 | Round 3: pot released to the winner's locked payee | [0xa8995cc4…](https://explorer-test.qday.info/tx/0xa8995cc482b2d5e593490ee414364f7b6f821f04a157db6d79494cc995c30f2d) |
 | Pay out Ah Ming's dividends and remaining security | [0x268a29ff…](https://explorer-test.qday.info/tx/0x268a29ff5bc62f717392b42a40ef285a0f3531f24b8e1b3944d3acb40da32f49) |
 | Pay out Kitty's dividends and remaining security | [0x5ee4853e…](https://explorer-test.qday.info/tx/0x5ee4853e03c3e62ff54af9e173cf77ba5cfe20a4c683faafe9693d84b79e8300) |
+
+### D. Standing order revoked: it can no longer collect
+
+Circle [`0xafb488219e5709a7fB0F7d0C3a3e1Fc0432B5D24`](https://explorer-test.qday.info/address/0xafb488219e5709a7fB0F7d0C3a3e1Fc0432B5D24) · 3 transactions
+
+| Step | Transaction |
+|---|---|
+| Wing sets a standing order: 1 share a round, max 2 rounds, 1-day expiry | [0x7be8ebac…](https://explorer-test.qday.info/tx/0x7be8ebace8a0d4d61b7d36be2281517fd6d044b58b0dc50554279c4743147199) |
+| Round 2: the standing order collects Wing's share | [0xb85f2123…](https://explorer-test.qday.info/tx/0xb85f2123d7d680caa2e7490cfa681e6095d6cf871e52d51b2d68c95e38ef6d03) |
+| Wing revokes the standing order with one signature | [0x4cfc00b1…](https://explorer-test.qday.info/tx/0x4cfc00b11a25663f7942cf3d2c6b5eb3ba679c47e762c3ec590383e3bf1eebde) |
+| Round 3: collecting again is refused by the contract (NoStandingOrder); no transaction is sent | check |
+
+### E. The relayer refuses what would revert
+
+No transaction: the relayer refused before sending anything.
+
+| Step | Transaction |
+|---|---|
+| POST /api/relay closeAuction while round 3 bidding is open → HTTP 400 WOULD_REVERT: "Bidding is still open for this round." (simulated, refused, no gas spent) | check |
