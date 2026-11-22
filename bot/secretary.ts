@@ -1,6 +1,6 @@
 // The circle secretary: keeps every Sovereign circle moving, so members never have to.
 //
-// Every few seconds, for each circle from the factories:
+// Every few seconds (TICK_MS, default 8000), for each circle the factory opened:
 //   - collects standing orders that are due (exactly one share, within the member's limits)
 //   - closes an auction once its bidding time is over
 //   - releases a pot once enough members approved (it always goes to the payee fixed at close)
@@ -11,16 +11,15 @@
 // It holds a gas-only key. Everything it can call is either a member's own signature or a function anyone may
 // call, so it cannot move anyone's money anywhere the contract does not already allow.
 //
-//   npx tsx bot/secretary.ts        (keys from ~/.config/sovereign/accounts.json; systemd unit in bot/sovereign-secretary.service)
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
+//   npx tsx bot/secretary.ts        (keys from $SOVEREIGN_KEYS or ~/.config/sovereign/accounts.json; systemd unit in bot/sovereign-secretary.service)
 import { type Address, type Hex, formatUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { circleAbi, factoryAbi } from "../scripts/lib/abi";
 import { FACTORY, publicClient, walletFor, explorerTx } from "../scripts/lib/aevum";
+import { loadKeys } from "../scripts/lib/keys";
 import { actionTypes, circleDomain, joinNonce, payNonce, receiveTypes, tusd8Domain, vrs } from "../scripts/lib/sign";
 
-const keys = JSON.parse(readFileSync(process.env.SOVEREIGN_KEYS ?? `${homedir()}/.config/sovereign/accounts.json`, "utf8"));
+const keys = loadKeys();
 const secretary = walletFor(keys.secretary.privateKey as Hex);
 const demo = [
   { name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey as Hex) },

@@ -1,19 +1,18 @@
 // Runs one whole Sovereign circle on QDay Aevum testnet, end to end, and records every transaction.
 // Three members (Ah Ming, Kitty, Wing) never spend gas: they only sign. The ops wallet relays.
 //
-//   npx tsx scripts/demo-circle.ts            (keys come from ~/.config/sovereign/accounts.json)
+//   npx tsx scripts/demo-circle.ts      (keys from $SOVEREIGN_KEYS or ~/.config/sovereign/accounts.json)
 //
-// Proof is written to docs/proof/<circle>.json and printed as explorer links.
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { homedir } from "node:os";
+// Proof is written to $PROOF_DIR/<circle>.json (default docs/proof) and printed as explorer links.
+import { writeFileSync, mkdirSync } from "node:fs";
 import { type Address, type Hex, formatUnits, parseUnits, decodeEventLog } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { circleAbi, factoryAbi } from "./lib/abi";
 import { aevum, FACTORY, TUSD8, publicClient, walletFor, tusd8Abi, explorerTx, explorerAddr } from "./lib/aevum";
+import { loadKeys, proofDir } from "./lib/keys";
 import { actionTypes, circleDomain, joinNonce, nowSec, payNonce, permitTypes, receiveTypes, tusd8Domain, vrs } from "./lib/sign";
 
-type Keys = Record<string, { address: Address; privateKey: Hex }>;
-const keys: Keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
+const keys = loadKeys();
 const ops = walletFor(keys.ops.privateKey);
 const people = [
   { id: "ahming", name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey) },
@@ -213,9 +212,9 @@ async function main() {
     console.log(`${p.name}: ${fmt(bal)}, tQDAY (gas) balance ${formatUnits(await publicClient.getBalance({ address: p.acct.address }), 18)}`);
   }
 
-  mkdirSync("docs/proof", { recursive: true });
-  writeFileSync(`docs/proof/${circle}.json`, JSON.stringify({ chainId: aevum.id, circle, ranAt: new Date().toISOString(), steps: proof }, null, 2));
-  console.log(`\nproof: docs/proof/${circle}.json (${proof.length} transactions)`);
+  mkdirSync(proofDir(), { recursive: true });
+  writeFileSync(`${proofDir()}/${circle}.json`, JSON.stringify({ chainId: aevum.id, circle, ranAt: new Date().toISOString(), steps: proof }, null, 2));
+  console.log(`\nproof: ${proofDir()}/${circle}.json (${proof.length} transactions)`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

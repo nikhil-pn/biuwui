@@ -1,14 +1,13 @@
 // Plays a visitor who opens a practice circle and joins it, then leaves everything else to the secretary bot.
 //   npx tsx scripts/practice-visitor.ts [roundSeconds]     (uses the "siumei" demo key as the visitor)
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { loadKeys } from "./lib/keys";
 import { type Address, type Hex, decodeEventLog } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { factoryAbi, circleAbi } from "./lib/abi";
 import { FACTORY, TUSD8, publicClient, walletFor, explorerAddr } from "./lib/aevum";
 import { joinNonce, nowSec, receiveTypes, tusd8Domain, vrs } from "./lib/sign";
 
-const keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
+const keys = loadKeys();
 const visitor = privateKeyToAccount(keys.siumei.privateKey as Hex);
 const relayer = walletFor(keys.relayer.privateKey as Hex);
 const roundLength = Number(process.argv[2] ?? 120);

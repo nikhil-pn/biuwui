@@ -5,16 +5,20 @@
 //   D. a standing order is revoked and can no longer collect
 //   E. the relayer refuses an action that would revert (no transaction, no gas)
 //
-//   npx tsx scripts/edge-proofs.ts      (keys from ~/.config/sovereign/accounts.json; sends with the gas-only relayer key)
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { homedir } from "node:os";
+//   npx tsx scripts/edge-proofs.ts      (keys from $SOVEREIGN_KEYS or ~/.config/sovereign/accounts.json; sends with the gas-only relayer key)
+//
+// Writes $PROOF_DIR/edge-cases.json (default docs/proof). Step E asks the relayer at $RELAY_URL (default: the live app's
+// /api/relay); on a local fork point it at scripts/serve-app.ts, e.g. RELAY_URL=http://127.0.0.1:3000/api/relay.
+import { writeFileSync, mkdirSync } from "node:fs";
 import { type Address, type Hex, decodeEventLog, formatUnits, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { circleAbi, factoryAbi } from "./lib/abi";
 import { FACTORY, TUSD8, aevum, explorerAddr, explorerTx, publicClient, tusd8Abi, walletFor } from "./lib/aevum";
+import { loadKeys, proofDir } from "./lib/keys";
 import { actionTypes, circleDomain, joinNonce, nowSec, payNonce, permitTypes, receiveTypes, tusd8Domain, vrs } from "./lib/sign";
 
-const keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
+const keys = loadKeys();
+const RELAY_URL = process.env.RELAY_URL ?? "https://app.sovereign.exprmnts.fun/api/relay";
 const relayer = walletFor(keys.relayer.privateKey as Hex);
 const P = {
   ahming: { name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey as Hex) },
@@ -158,7 +162,7 @@ async function main() {
 
     // E. the live relayer refuses an action that would revert, before spending any gas
     const E = "E. The relayer refuses what would revert";
-    const res = await fetch("https://app.sovereign.exprmnts.fun/api/relay", {
+    const res = await fetch(RELAY_URL, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ target: c, fn: "closeAuction", args: [] }),
     });
@@ -175,9 +179,9 @@ async function main() {
     }
   }
 
-  mkdirSync("docs/proof", { recursive: true });
-  writeFileSync("docs/proof/edge-cases.json", JSON.stringify({ chainId: aevum.id, factory: FACTORY, ranAt: new Date().toISOString(), steps }, null, 2));
-  console.log(`\nwrote docs/proof/edge-cases.json (${steps.filter((s) => s.tx).length} transactions)`);
+  mkdirSync(proofDir(), { recursive: true });
+  writeFileSync(`${proofDir()}/edge-cases.json`, JSON.stringify({ chainId: aevum.id, factory: FACTORY, ranAt: new Date().toISOString(), steps }, null, 2));
+  console.log(`\nwrote ${proofDir()}/edge-cases.json (${steps.filter((s) => s.tx).length} transactions)`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

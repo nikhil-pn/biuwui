@@ -1,8 +1,7 @@
 // Exercises api/relay.ts and api/faucet.ts in-process against a chain (use a local Aevum fork):
 //   anvil --fork-url https://rpc-test.qday.info --hardfork shanghai --port 8555 &
 //   AEVUM_RPC=http://127.0.0.1:8555 RELAYER_PRIVATE_KEY=… FAUCET_PRIVATE_KEY=… npx tsx scripts/test-relay.ts
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { loadKeys } from "./lib/keys";
 import { keccak256, toBytes, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import relay from "../api/relay";
@@ -11,7 +10,7 @@ import { FACTORY, publicClient } from "./lib/aevum";
 import { factoryAbi, circleAbi } from "./lib/abi";
 import { actionTypes, joinNonce, nowSec, receiveTypes, tusd8Domain, circleDomain, vrs } from "./lib/sign";
 
-const keys = JSON.parse(readFileSync(`${homedir()}/.config/sovereign/accounts.json`, "utf8"));
+const keys = loadKeys();
 const org = privateKeyToAccount(keys.siumei.privateKey);
 const kitty = privateKeyToAccount(keys.kitty.privateKey);
 let n = 0;

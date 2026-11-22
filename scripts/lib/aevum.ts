@@ -14,7 +14,8 @@ export const aevum = defineChain({
 });
 
 export const TUSD8 = deployment.token as Address;
-export const FACTORY = deployment.factory as Address;
+/** The factory in deployments/aevum.json, or SOVEREIGN_FACTORY (a copy you deployed yourself, e.g. on a local fork). */
+export const FACTORY = (process.env.SOVEREIGN_FACTORY || deployment.factory) as Address;
 export const DEPLOY_BLOCK = BigInt(deployment.deployBlock);
 export const explorerTx = (h: Hex) => `${aevum.blockExplorers.default.url}/tx/${h}`;
 export const explorerAddr = (a: Address) => `${aevum.blockExplorers.default.url}/address/${a}`;
