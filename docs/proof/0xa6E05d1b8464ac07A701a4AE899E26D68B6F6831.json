@@ -1,0 +1,152 @@
+{
+  "chainId": 44005,
+  "circle": "0xa6E05d1b8464ac07A701a4AE899E26D68B6F6831",
+  "ranAt": "2026-11-22T21:16:25.082Z",
+  "steps": [
+    {
+      "step": "Open circle 'Family Circle' (3 members, 0.25 tUSD8 a round)",
+      "tx": "0x05d0f9188d35f0ef2227131ac3a9b481ce4f1e5fa73ccb5ffc78ff2e10279099",
+      "url": "https://explorer-test.qday.info/tx/0x05d0f9188d35f0ef2227131ac3a9b481ce4f1e5fa73ccb5ffc78ff2e10279099"
+    },
+    {
+      "step": "Ah Ming joins with a signed pledge (no gas)",
+      "tx": "0xceb871df1e5266dc4d415e2a7538617116147aa94ec6d8efb8981c16f6b2e12d",
+      "url": "https://explorer-test.qday.info/tx/0xceb871df1e5266dc4d415e2a7538617116147aa94ec6d8efb8981c16f6b2e12d"
+    },
+    {
+      "step": "Kitty joins with a signed pledge (no gas)",
+      "tx": "0xbadb69f0b7101e77ba26ef5a3b50b3b9cdba3e3cb7c2895e55d821344b80e8bd",
+      "url": "https://explorer-test.qday.info/tx/0xbadb69f0b7101e77ba26ef5a3b50b3b9cdba3e3cb7c2895e55d821344b80e8bd"
+    },
+    {
+      "step": "Wing joins with a signed pledge (no gas)",
+      "tx": "0x79602afba987fc4f56da2b3513d855e59f10a72f93f5e770218f3eafd68281d9",
+      "url": "https://explorer-test.qday.info/tx/0x79602afba987fc4f56da2b3513d855e59f10a72f93f5e770218f3eafd68281d9"
+    },
+    {
+      "step": "Wing sets a standing order: 1 share a round, max 2 rounds, expires in 7 days (no gas)",
+      "tx": "0xc4f49328a630c482991a05a7a03645cf060b6e8760e3f293b05a0222042c913f",
+      "url": "https://explorer-test.qday.info/tx/0xc4f49328a630c482991a05a7a03645cf060b6e8760e3f293b05a0222042c913f"
+    },
+    {
+      "step": "Round 1: Kitty bids a 0.1 tUSD8 discount (signed, no gas)",
+      "tx": "0xc2114e563b5935fc4b9e83be116ec0a353841f05d5948c5cb1b84b55ff088e52",
+      "url": "https://explorer-test.qday.info/tx/0xc2114e563b5935fc4b9e83be116ec0a353841f05d5948c5cb1b84b55ff088e52"
+    },
+    {
+      "step": "Round 1: auction closed (anyone can call it)",
+      "tx": "0xdf3fb90512079c0a9334aa91fbd8626683e64ad8517421a0d83883b4a85a6d06",
+      "url": "https://explorer-test.qday.info/tx/0xdf3fb90512079c0a9334aa91fbd8626683e64ad8517421a0d83883b4a85a6d06"
+    },
+    {
+      "step": "Round 1: Ah Ming approves the release (signed, no gas)",
+      "tx": "0x04151e12e9af731f6405060e9589580e4e4487ec1182b62386c144b5b1a264e7",
+      "url": "https://explorer-test.qday.info/tx/0x04151e12e9af731f6405060e9589580e4e4487ec1182b62386c144b5b1a264e7"
+    },
+    {
+      "step": "Round 1: Wing approves the release (signed, no gas)",
+      "tx": "0xce3c5f3860aacc1722235f1294a998feb9beeb2bb6e26eff970118a1de86197a",
+      "url": "https://explorer-test.qday.info/tx/0xce3c5f3860aacc1722235f1294a998feb9beeb2bb6e26eff970118a1de86197a"
+    },
+    {
+      "step": "Round 1: pot released to Kitty's locked payee",
+      "tx": "0x7fb70a6722e155ad9b1cbe8449c66fd8dd02e85cad3357458332b71b7ca277fd",
+      "url": "https://explorer-test.qday.info/tx/0x7fb70a6722e155ad9b1cbe8449c66fd8dd02e85cad3357458332b71b7ca277fd"
+    },
+    {
+      "step": "Round 2: Ah Ming pays a signed share (no gas)",
+      "tx": "0x1e4c39cb7ddbbba3abd366868aed9adecc1980d6cb75794d349cdc98fc6afe15",
+      "url": "https://explorer-test.qday.info/tx/0x1e4c39cb7ddbbba3abd366868aed9adecc1980d6cb75794d349cdc98fc6afe15"
+    },
+    {
+      "step": "Round 2: Kitty pays a signed share (no gas)",
+      "tx": "0xbdab86d7333777dfa84a656781ca839edf61adfd9edb61a2813c94727b15ed63",
+      "url": "https://explorer-test.qday.info/tx/0xbdab86d7333777dfa84a656781ca839edf61adfd9edb61a2813c94727b15ed63"
+    },
+    {
+      "step": "Round 2: standing order collects Wing's share",
+      "tx": "0x7e5d431b1e4af28fac45ece2df9e959aedee6289a6f5619d90e38c88a4876ad7",
+      "url": "https://explorer-test.qday.info/tx/0x7e5d431b1e4af28fac45ece2df9e959aedee6289a6f5619d90e38c88a4876ad7"
+    },
+    {
+      "step": "Payee lock: a change of Ah Ming's payout address is requested (waits 120 s, visible to all)",
+      "tx": "0x3710b1c1566e6f15a0263ee44ad0527aabedd714e9ea42d6218b98da1ab6d4bd",
+      "url": "https://explorer-test.qday.info/tx/0x3710b1c1566e6f15a0263ee44ad0527aabedd714e9ea42d6218b98da1ab6d4bd"
+    },
+    {
+      "step": "Payee lock: Ah Ming cancels it with one signature before it takes effect",
+      "tx": "0x638a66194c0fdd686eaa4d2f933c15ba0945548feabfd3a7559b1b836ce30551",
+      "url": "https://explorer-test.qday.info/tx/0x638a66194c0fdd686eaa4d2f933c15ba0945548feabfd3a7559b1b836ce30551"
+    },
+    {
+      "step": "Round 2: auction closed (anyone can call it)",
+      "tx": "0x6090b31d4fac05f45832fa23728a11004d142f8557ded371482daf82b09287e8",
+      "url": "https://explorer-test.qday.info/tx/0x6090b31d4fac05f45832fa23728a11004d142f8557ded371482daf82b09287e8"
+    },
+    {
+      "step": "Round 2: Ah Ming approves the release (signed, no gas)",
+      "tx": "0x835fbb3e999fb74b0a03cff7fd57a10caf55c55698a31a0a5c1d361068fb7a18",
+      "url": "https://explorer-test.qday.info/tx/0x835fbb3e999fb74b0a03cff7fd57a10caf55c55698a31a0a5c1d361068fb7a18"
+    },
+    {
+      "step": "Round 2: Kitty approves the release (signed, no gas)",
+      "tx": "0x974d781b9661f5dece36e96b1461a68e09fc9b45f9ecd64bc64404cd93201070",
+      "url": "https://explorer-test.qday.info/tx/0x974d781b9661f5dece36e96b1461a68e09fc9b45f9ecd64bc64404cd93201070"
+    },
+    {
+      "step": "Round 2: pot released to Ah Ming's locked payee",
+      "tx": "0xb6b1b44f70f70efb55105b26f3ee679872818d8e557d3957f5c351f7f01f7942",
+      "url": "https://explorer-test.qday.info/tx/0xb6b1b44f70f70efb55105b26f3ee679872818d8e557d3957f5c351f7f01f7942"
+    },
+    {
+      "step": "Round 3: Ah Ming pays a signed share (no gas)",
+      "tx": "0xd754166cf8d4d44234f1aa8eff782ee3188536662437f138d475778a42535d05",
+      "url": "https://explorer-test.qday.info/tx/0xd754166cf8d4d44234f1aa8eff782ee3188536662437f138d475778a42535d05"
+    },
+    {
+      "step": "Round 3: Kitty pays a signed share (no gas)",
+      "tx": "0x328b376a81d5b593d04166dac68fdd7530928254d578586f12cdd8f4886a7197",
+      "url": "https://explorer-test.qday.info/tx/0x328b376a81d5b593d04166dac68fdd7530928254d578586f12cdd8f4886a7197"
+    },
+    {
+      "step": "Round 3: standing order collects Wing's share",
+      "tx": "0x791b69e56d98c3487dd80964a0c9c56cc2534becaa6b305fab9f6b50b7cd78cc",
+      "url": "https://explorer-test.qday.info/tx/0x791b69e56d98c3487dd80964a0c9c56cc2534becaa6b305fab9f6b50b7cd78cc"
+    },
+    {
+      "step": "Round 3: auction closed (anyone can call it)",
+      "tx": "0xa0a24d749fea90bdfd5b84e28b0ba617c718b65dfc17e270013e9a7d5aecbde7",
+      "url": "https://explorer-test.qday.info/tx/0xa0a24d749fea90bdfd5b84e28b0ba617c718b65dfc17e270013e9a7d5aecbde7"
+    },
+    {
+      "step": "Round 3: Ah Ming approves the release (signed, no gas)",
+      "tx": "0x195aea67594a88c45ed44f61f10de2fc1f57fb10d7650e20d5c226d7a298fe4d",
+      "url": "https://explorer-test.qday.info/tx/0x195aea67594a88c45ed44f61f10de2fc1f57fb10d7650e20d5c226d7a298fe4d"
+    },
+    {
+      "step": "Round 3: Kitty approves the release (signed, no gas)",
+      "tx": "0x0802d534185f19b6f96a9732e2b6bbb1db4dafbef13a27aad3bb1fe55e9cbcc0",
+      "url": "https://explorer-test.qday.info/tx/0x0802d534185f19b6f96a9732e2b6bbb1db4dafbef13a27aad3bb1fe55e9cbcc0"
+    },
+    {
+      "step": "Round 3: pot released to Wing's locked payee",
+      "tx": "0xb0f48fb3d21f517618cc2b71d3d740cbed5142b6b6b889c16bea8dc087a12568",
+      "url": "https://explorer-test.qday.info/tx/0xb0f48fb3d21f517618cc2b71d3d740cbed5142b6b6b889c16bea8dc087a12568"
+    },
+    {
+      "step": "Pay out Ah Ming's dividend and security (0.280833 tUSD8)",
+      "tx": "0x9cebd5278b13ba6c15508dd778ee8575816584817b0e0a7ea514037cb40dee29",
+      "url": "https://explorer-test.qday.info/tx/0x9cebd5278b13ba6c15508dd778ee8575816584817b0e0a7ea514037cb40dee29"
+    },
+    {
+      "step": "Pay out Kitty's dividend and security (0.355834 tUSD8)",
+      "tx": "0x4c65efd0f2644a1315ffe0e1ff87cf6d2caf22f398176a0df00c96e9ad8edd9d",
+      "url": "https://explorer-test.qday.info/tx/0x4c65efd0f2644a1315ffe0e1ff87cf6d2caf22f398176a0df00c96e9ad8edd9d"
+    },
+    {
+      "step": "Pay out Wing's dividend and security (0.030833 tUSD8)",
+      "tx": "0x5f5cdb166d895bd7eca8af7e4c340988f37335fc0ee25f5ff376fef327b0ec1c",
+      "url": "https://explorer-test.qday.info/tx/0x5f5cdb166d895bd7eca8af7e4c340988f37335fc0ee25f5ff376fef327b0ec1c"
+    }
+  ]
+}
