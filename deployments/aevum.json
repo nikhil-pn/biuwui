@@ -4,13 +4,13 @@
   "rpc": "https://rpc-test.qday.info",
   "explorer": "https://explorer-test.qday.info",
   "token": "0x456569838f1d43009A91ebA4263147Afd7233483",
-  "implementation": "0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed",
-  "factory": "0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87",
-  "deployBlock": 3754362,
-  "factoryDeployBlock": 3754364,
+  "implementation": "0x5a2F6Aa2659F196E8AbfA42FF85E8d11F4c83922",
+  "factory": "0xc81C215C64A5145067f56DD461Cb058f05A7c898",
+  "deployBlock": 3863334,
+  "factoryDeployBlock": 3863336,
   "deployTxs": {
-    "implementation": "0x105279c33c217f56c23a35c6044285cbec546c2488e10205b3e1a31ae4c19c98",
-    "factory": "0x8635ab70a2859fbd53aabfef7a3e51da34c8feb7145e46fcec5c0024026f75c2"
+    "implementation": "0x6209a41d78c622304331520e06bb259c16d7db2379ef1a19cf9b60f77bbdaf44",
+    "factory": "0x046cd5161240b79c31665208f304e228fbb3eba617a6479771081a452c884187"
   },
   "deployer": "0x1b062F21511BA1807E9053A57b40c32fb4C31f8b",
   "verified": true

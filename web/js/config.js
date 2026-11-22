@@ -4,12 +4,12 @@ export const CONFIG = {
   explorer: "https://explorer-test.qday.info",
   chainId: 44005,
   /** The current factory (gasless open). New circles open here. */
-  factory: "0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87",
+  factory: "0xc81C215C64A5145067f56DD461Cb058f05A7c898",
   /** Kept for code that reads two factories; there is one factory now. */
-  factoryV1: "0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87",
-  implementation: "0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed",
+  factoryV1: "0xc81C215C64A5145067f56DD461Cb058f05A7c898",
+  implementation: "0x5a2F6Aa2659F196E8AbfA42FF85E8d11F4c83922",
   /** The block the factory was deployed in. */
-  firstBlock: 3754362,
+  firstBlock: 3863334,
   /** tUSD8, QDay's test dollar (6 decimals). */
   token: "0x456569838f1d43009A91ebA4263147Afd7233483",
   decimals: 6,
