@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.nvm/versions/node/v24.14.1/bin:$PATH"
 npx esbuild web-src/app/main.ts --bundle --platform=browser --format=esm --target=es2022 --minify \
-  --define:process.env.AEVUM_RPC=undefined --legal-comments=none --outfile=web-app/js/app.js --log-level=warning
+  --define:process.env.AEVUM_RPC=undefined --define:process.env.SOVEREIGN_FACTORY=undefined --legal-comments=none --outfile=web-app/js/app.js --log-level=warning
 cp web/css/base.css web/css/glass.css web/css/wallet.css web/css/ring.css web-app/css/
 mkdir -p web-app/fonts && cp web/fonts/* web-app/fonts/
 cp web/favicon.svg web-app/
