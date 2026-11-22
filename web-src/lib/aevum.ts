@@ -12,7 +12,7 @@ export const NET = {
   explorer: aevum.blockExplorers.default.url,
   /** The current factory (gasless open). New circles open here. */
   factory: FACTORY,
-  /** The first factory; its circle stays on chain. */
+  /** A second factory to accept invite links from, if deployments/aevum.json names one (factoryV1); today it is the same factory. */
   factoryV1: ((deployment as { factoryV1?: { address: string } }).factoryV1?.address ?? deployment.factory) as Address,
   implementation: deployment.implementation as Address,
   token: TUSD8,

@@ -117,7 +117,7 @@ export async function renderLockTest() {
   );
 }
 
-/** Every transaction of the first full circle, for the proof page. */
+/** Every transaction of the newest full proof circle, for the proof page. */
 export async function renderProofSteps() {
   const ul = document.getElementById("proof-steps");
   if (!ul) return;
