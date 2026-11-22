@@ -144,7 +144,7 @@ async function tend(c: Address, now: bigint) {
 }
 
 async function main() {
-  log(`secretary ${secretary.account.address}, factories ${FACTORIES.join(", ")}, every ${TICK_MS / 1000}s`);
+  log(`secretary ${secretary.account.address}, factory ${FACTORIES.join(", ")}, every ${TICK_MS / 1000}s`);
   for (;;) {
     try {
       await tick();
