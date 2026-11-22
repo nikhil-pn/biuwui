@@ -91,7 +91,7 @@ const link = (href, text) => {
   return a;
 };
 
-/** The payee-lock test from the proof circle: a change requested, then cancelled with one signature. */
+/** The payee-lock test from the newest proof circle: a change requested, then cancelled with one signature. */
 export async function renderLockTest() {
   const ul = document.getElementById("attempts");
   if (!ul) return;
@@ -104,7 +104,8 @@ export async function renderLockTest() {
     ...steps.map((s) => {
       const li = document.createElement("li");
       const label = document.createElement("span");
-      label.textContent = s.step.replace(/^Payee lock: /, "") + " · ";
+      const text = s.step.replace(/^Payee lock: /, "");
+      label.textContent = text[0].toUpperCase() + text.slice(1) + " · ";
       const res = document.createElement("span");
       const asked = /requested/i.test(s.step);
       res.className = asked ? "bad" : "good";
