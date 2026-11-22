@@ -102,6 +102,21 @@ contract JoinTest is SovereignBase {
         assertEq(circle.getRound(1).collected, 0);
     }
 
+    /// Leaving keeps everyone else in join order, so "earliest-joined takes the pot when nobody bids" holds.
+    function test_LeaveKeepsJoinOrder() public {
+        for (uint256 i; i < 4; ++i) {
+            SovereignCircle.Authorization memory a = signJoin(i, circle, people[i], names[i]);
+            circle.joinWithAuthorization(people[i], names[i], people[i], a);
+        }
+        vm.prank(people[1]);
+        circle.leave();
+        address[] memory ms = circle.members();
+        assertEq(ms.length, 3);
+        assertEq(ms[0], people[0]);
+        assertEq(ms[1], people[2]);
+        assertEq(ms[2], people[3]);
+    }
+
     function test_UnfilledCircleCancelsAndRefundsEveryPledge() public {
         for (uint256 i; i < 3; ++i) {
             SovereignCircle.Authorization memory a = signJoin(i, circle, people[i], names[i]);

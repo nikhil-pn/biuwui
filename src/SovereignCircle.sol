@@ -22,7 +22,7 @@ import {IStablecoin} from "./interfaces/IStablecoin.sol";
 ///   `maxRounds` times, until it expires or the member revokes it.
 /// - Joining is a pledge: the first share is paid on joining. If the circle is not full by `joinBy`,
 ///   anyone can cancel it and every pledge goes back.
-/// - If a round stalls, any member can dissolve the circle and the money left goes back pro rata.
+/// - If a round stalls, anyone can dissolve the circle and the money left goes back pro rata.
 contract SovereignCircle is EIP712, Nonces, ReentrancyGuard {
     // ---------------------------------------------------------------- limits
 
@@ -436,14 +436,15 @@ contract SovereignCircle is EIP712, Nonces, ReentrancyGuard {
     }
 
     function _leave(address m) internal {
+        // Shift the later members down so the join order is kept: with no bid, the earliest-joined
+        // eligible member takes the pot, so the order must survive someone leaving.
         uint256 n = _members.length;
+        bool found;
         for (uint256 i; i < n; ++i) {
-            if (_members[i] == m) {
-                _members[i] = _members[n - 1];
-                _members.pop();
-                break;
-            }
+            if (found) _members[i - 1] = _members[i];
+            else if (_members[i] == m) found = true;
         }
+        _members.pop();
         isMember[m] = false;
         paid[1][m] = false;
         onTimeRounds[m] -= 1;
