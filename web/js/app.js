@@ -19,7 +19,9 @@ function money(units) {
   return `$${whole}<span class="dec">.${dec}</span>`;
 }
 
-const state = { list: [], all: [], selected: null, tab: "wallet" };
+// list: every circle, newest first (the story and the feed). phone: the circles the phone mockup may show: the proof
+// circle first, then other circles that are not practice circles (visitors name those, so they stay off the landing).
+const state = { list: [], phone: [], all: [], selected: null, tab: "wallet" };
 
 function chipFor(c, i) {
   const b = document.createElement("button");
@@ -37,8 +39,8 @@ function chipFor(c, i) {
 }
 
 function renderChips() {
-  if (!state.list.length || !has("circle-chips")) return;
-  $("circle-chips").replaceChildren(...state.list.slice(0, CHIPS).map(chipFor));
+  if (!state.phone.length || !has("circle-chips")) return;
+  $("circle-chips").replaceChildren(...state.phone.slice(0, CHIPS).map(chipFor));
 }
 
 /** Everything the page shows about one circle. */
@@ -58,7 +60,7 @@ async function snapshot(address) {
 
 async function refreshPhone() {
   if (!has("balance")) return;
-  const c = state.list.find((x) => x.address === state.selected);
+  const c = state.phone.find((x) => x.address === state.selected);
   if (!c) return;
   const { info, rounds, paid, memberList, paidFlags } = await snapshot(c.address);
   if (state.tab === "members") {
@@ -70,9 +72,10 @@ async function refreshPhone() {
     await renderFeed([c], quorum, "phone-feed", 12);
   }
   const saved = rounds.reduce((s, r) => s + r.collected, 0n);
-  const shared = rounds.filter((r) => r.released).reduce((s, r) => s + r.discount, 0n);
   $("balance").innerHTML = money(saved);
-  $("gain").textContent = saved > 0n ? `+${((Number(shared) / Number(saved)) * 100).toFixed(2)}%` : "+0.00%";
+  // A true badge instead of a growth figure: shown only when no member of this circle has ever sent a transaction.
+  const sent = await Promise.all(memberList.map((m) => chain.txCount(m).catch(() => 1)));
+  $("gas-badge").hidden = !(memberList.length && sent.every((n) => n === 0));
   $("card-kind").textContent = PHASES[info.phase];
 
   const now = rounds[info.currentRound - 1];
@@ -112,12 +115,13 @@ async function loadCircles() {
   const addrs = await chain.circles();
   const infos = await Promise.all(addrs.map((a) => chain.circleInfo(a)));
   story.renderStats(infos);
-  // Newest first: the phone opens on the newest circle and keeps following it.
+  // Newest first. The phone opens on the proof circle (docs/PROOF.md), or the newest circle that is not a practice one.
   const fresh = [...infos].reverse();
-  const newest = fresh[0]?.address;
-  if (!state.selected || (state.list[0] && state.list[0].address !== newest && state.selected === state.list[0].address)) {
-    state.selected = newest ?? null;
-  }
+  const pinned = (await story.proofRuns()).at(-1)?.circle?.toLowerCase();
+  const proof = fresh.find((c) => c.address.toLowerCase() === pinned);
+  const others = fresh.filter((c) => !c.practice && c !== proof);
+  state.phone = proof || others.length ? [proof, ...others].filter(Boolean) : fresh;
+  if (!state.phone.some((c) => c.address === state.selected)) state.selected = state.phone[0]?.address ?? null;
   state.list = fresh;
   state.all = infos;
   renderChips();

@@ -125,6 +125,9 @@ export async function payeeOf(c, member) {
 
 // ---------------------------------------------------------------- blocks and logs
 
+/** How many transactions an address has ever sent. 0 means it never paid gas: everything it did was relayed. */
+export const txCount = async (a) => Number(BigInt(await rpc("eth_getTransactionCount", [a, "latest"])));
+
 export const blockNumber = async () => Number(BigInt(await rpc("eth_blockNumber", [])));
 
 const blockTimes = new Map();
