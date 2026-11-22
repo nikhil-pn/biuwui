@@ -75,4 +75,4 @@ Smart-account (EIP-1271) signatures are accepted too.
 - Discount at most 40% and organiser fee at most 5% of the pot, borrowed from India's Chit Funds Act 1982
   (s.6(3): discount at most 40% of the chit amount; s.21(1)(b): foreman's commission at most 5%, which the 2019
   amendment raises to 7%). We use them as sensible defaults, not as a legal claim for any country.
-- Names are 1 to 32 bytes.
+- Payee names are 1 to 32 bytes; circle names 1 to 64 bytes.
