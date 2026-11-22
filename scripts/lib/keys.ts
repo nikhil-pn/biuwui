@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import type { Address, Hex } from "viem";
 
 export type Keys = Record<string, { address: Address; privateKey: Hex }>;
-export const keysPath = () => process.env.SOVEREIGN_KEYS ?? `${homedir()}/.config/sovereign/accounts.json`;
+export const keysPath = () => process.env.SOVEREIGN_KEYS || `${homedir()}/.config/sovereign/accounts.json`;
 export const loadKeys = (): Keys => JSON.parse(readFileSync(keysPath(), "utf8"));
 /** Where the demo and safety-path scripts write their proof JSON (docs/proof by default; use another folder on a fork). */
-export const proofDir = () => process.env.PROOF_DIR ?? "docs/proof";
+export const proofDir = () => process.env.PROOF_DIR || "docs/proof";

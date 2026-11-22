@@ -18,7 +18,7 @@ import { loadKeys, proofDir } from "./lib/keys";
 import { actionTypes, circleDomain, joinNonce, nowSec, payNonce, permitTypes, receiveTypes, tusd8Domain, vrs } from "./lib/sign";
 
 const keys = loadKeys();
-const RELAY_URL = process.env.RELAY_URL ?? "https://app.sovereign.exprmnts.fun/api/relay";
+const RELAY_URL = process.env.RELAY_URL || "https://app.sovereign.exprmnts.fun/api/relay";
 const relayer = walletFor(keys.relayer.privateKey as Hex);
 const P = {
   ahming: { name: "Ah Ming", acct: privateKeyToAccount(keys.ahming.privateKey as Hex) },
