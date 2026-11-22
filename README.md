@@ -145,6 +145,8 @@ sequenceDiagram
 ```
 
 ## API
+Test money on the real testnet: the app's starter faucet gives 0.03 tUSD8 per new wallet; QDay's own faucet in their [Discord](https://discord.gg/bYPhjmrSfK) (`/faucet <address>`) gives 1 tQDAY + 5 tUSD8.
+
 The relayer and faucet are documented in [`docs/API.md`](docs/API.md), with request and response shapes, error codes and a
 curl example for each endpoint. A short taste:
 
