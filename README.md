@@ -22,10 +22,10 @@ rounds in a few minutes) · app: https://app.sovereign.exprmnts.fun · proof: ht
 | Risk | What the contract does |
 |---|---|
 | The organiser runs off with the pot | There is no owner or admin key. The organiser only gets a capped fee. |
-| A winner stops paying | Part of each winner's pot is held as security and pays their later shares. |
-| A stolen key redirects the pot | Every pot goes to a **named, locked payee**. A change waits a delay (e.g. 48 h), every member sees it, and it can be cancelled with one signature. |
-| The circle never fills | Joining is a **pledge**. If the circle is not full by its deadline, every pledge is refunded. |
-| A round stalls | Anyone can dissolve the circle; what is left goes back pro rata. |
+| A winner stops paying | Part of each winner's pot (half by default, never more than they still owe) is held as security and pays their later shares while it lasts; [proven on chain](docs/PROOF.md#2-the-safety-paths-live). |
+| A stolen key redirects the pot | Every pot goes to a **named, locked payee**. A change waits a delay the circle sets (the app offers 5 minutes to 48 hours), every member sees it, and it can be cancelled with one signature. |
+| The circle never fills | Joining is a **pledge**. If the circle is not full by its deadline, every pledge is refunded ([on chain](docs/PROOF.md#2-the-safety-paths-live)). |
+| A round stalls | Anyone can dissolve the circle; what is left goes back pro rata ([on chain](docs/PROOF.md#2-the-safety-paths-live)). |
 | Forgetting to pay | A **standing order**: exactly one share per round, at most N rounds, expires, revocable at any time. |
 | Members have no gas token | Every action is a **signature** (EIP-3009, EIP-712, EIP-2612); a relayer submits it. |
 
@@ -34,8 +34,8 @@ Full rules: [`docs/RULES.md`](docs/RULES.md).
 ## Live on Aevum testnet (chain 44005)
 | | |
 |---|---|
-| SovereignFactory (verified) | [`0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87`](https://explorer-test.qday.info/address/0x73117fda8e0C804eB3FACbFefCd08cF6164f1f87) |
-| SovereignCircle implementation (verified) | [`0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed`](https://explorer-test.qday.info/address/0x918cd9BC72cA8Eb23A57995C2503e3ED8676fDed) |
+| SovereignFactory (verified) | [`0xc81C215C64A5145067f56DD461Cb058f05A7c898`](https://explorer-test.qday.info/address/0xc81C215C64A5145067f56DD461Cb058f05A7c898) |
+| SovereignCircle implementation (verified) | [`0x5a2F6Aa2659F196E8AbfA42FF85E8d11F4c83922`](https://explorer-test.qday.info/address/0x5a2F6Aa2659F196E8AbfA42FF85E8d11F4c83922) |
 | A full circle on chain | [all transactions](docs/PROOF.md) |
 
 ## Run it
