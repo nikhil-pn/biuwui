@@ -132,6 +132,7 @@ async function start() {
   }
   story.renderLockTest().catch(() => {});
   story.renderProofSteps().catch(() => {});
+  story.renderEdgeSteps().catch(() => {});
   initTabs((tab) => {
     state.tab = tab;
     refreshPhone().catch(console.error);

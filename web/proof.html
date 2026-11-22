@@ -43,26 +43,34 @@
     <header class="page-head">
       <p class="eyebrow">Proof</p>
       <h1>Check every claim on chain.</h1>
-      <p class="lede">Verified contracts on the QDay Aevum testnet, and a whole circle played end to end where members paid no gas.</p>
+      <p class="lede">Verified contracts on the QDay Aevum testnet, a whole circle played end to end where members paid no gas, and every safety path run for real: 63 transactions you can open on the explorer.</p>
     </header>
     <section class="block" id="proof">
         <div class="proof">
           <div class="proof-row"><h3>Factory</h3><p>Opens circles as EIP-1167 clones. <code>createCircleWithSig</code> lets an organiser open a circle with one signature. Verified.</p><a href="https://explorer-test.qday.info/address/0xc81C215C64A5145067f56DD461Cb058f05A7c898" target="_blank" rel="noopener">0xc81C…c898 ↗</a></div>
           <div class="proof-row"><h3>Circle implementation</h3><p>Pledges, rounds, the auction, the payee lock, standing orders, release and dissolve. No owner, no admin, no upgrade. Verified.</p><a href="https://explorer-test.qday.info/address/0x5a2F6Aa2659F196E8AbfA42FF85E8d11F4c83922" target="_blank" rel="noopener">0x5a2F…3922 ↗</a></div>
           <div class="proof-row"><h3>tUSD8</h3><p>QDay's test dollar (6 decimals), with EIP-3009 and EIP-2612, so members can pay by signature.</p><a href="https://explorer-test.qday.info/address/0x456569838f1d43009A91ebA4263147Afd7233483" target="_blank" rel="noopener">0x4565…3483 ↗</a></div>
-          <div class="proof-row"><h3>Foundry tests</h3><p>48 unit, fuzz and invariant tests plus a fork test, including a whole gasless circle against the real tUSD8 on a fork of Aevum.</p><a href="https://github.com/nikhil-pn/sovereign/tree/main/test" target="_blank" rel="noopener">test/ ↗</a></div>
+          <div class="proof-row"><h3>Foundry tests</h3><p>49 unit, fuzz and invariant tests, plus a fork test that plays a whole gasless circle against the real tUSD8 on a fork of Aevum.</p><a href="https://github.com/nikhil-pn/sovereign/tree/main/test" target="_blank" rel="noopener">test/ ↗</a></div>
           <div class="proof-row"><h3>Gasless relayer</h3><p>An allow-list of functions, simulate before sending, signatures valid for under an hour, rate limits and a gas cap.</p><a href="https://github.com/nikhil-pn/sovereign/blob/main/docs/API.md" target="_blank" rel="noopener">API.md ↗</a></div>
           <div class="proof-row"><h3>The rules</h3><p>Pledges, rounds, standing orders, the payee lock and what happens when things go wrong, in plain words.</p><a href="https://github.com/nikhil-pn/sovereign/blob/main/docs/RULES.md" target="_blank" rel="noopener">RULES.md ↗</a></div>
         </div>
       </section>
-    <section class="block">
+    <section class="block" id="circle">
+        <h2>A whole circle</h2>
+        <p class="sub">Three members, three rounds, a bid, a standing order and a payee change cancelled in time. The members never held a gas token: every one of their actions was a signature our relayer submitted.</p>
         <div class="feed-card">
           <header class="feed-head">
-            <span>29 transactions, no gas</span>
+            <span id="proof-count">Loading…</span>
             <span class="feed-timer" id="proof-circle">loading…</span>
           </header>
           <ul class="feed" id="proof-steps"><li class="empty">Loading the transactions…</li></ul>
         </div>
+      </section>
+    <section class="block" id="safety">
+        <h2>The safety paths</h2>
+        <p class="sub">Three more circles, sent by the gas-only relayer key: a circle that never fills, a round that stalls, a winner who stops paying, a standing order revoked, and the relayer refusing a call that would fail. <span id="edge-count"></span></p>
+        <div id="edge-cases"><div class="feed-card"><ul class="feed"><li class="empty">Loading the transactions…</li></ul></div></div>
+        <p class="aside">Rows marked “check” are reads or a refused request, so they have no transaction. The same record is in <a href="https://github.com/nikhil-pn/sovereign/blob/main/docs/PROOF.md#2-the-safety-paths-live-2026-11-22-2119-utc" target="_blank" rel="noopener">PROOF.md</a>.</p>
       </section>
       <section class="cta-band glass sheen">
         <div><h2>Start your first savings circle</h2><p>Make a wallet or connect yours, choose the share and how often, and invite your friends. Every step runs on the QDay Aevum testnet, and you never need gas.</p></div>

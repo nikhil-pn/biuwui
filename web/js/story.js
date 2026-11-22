@@ -6,21 +6,21 @@ import { usd } from "./feed.js";
 const NULL_EL = new Proxy({ style: {} }, { get: (t, k) => (k in t ? t[k] : () => {}), set: () => true });
 const $ = (id) => document.getElementById(id) ?? NULL_EL;
 
-/** Totals over every circle both factories have opened. */
+/** Totals over every circle the factory has opened. */
 export function renderStats(infos) {
   let rounds = 0;
   let volume = 0n;
-  let joined = 0;
+  let seats = 0;
   for (const c of infos) {
     const done = c.phase === 2 ? c.size : c.phase === 1 ? Math.max(c.currentRound - 1, 0) : 0;
     rounds += done;
     volume += BigInt(done) * c.share * BigInt(c.size);
-    joined += c.memberCount;
+    seats += c.memberCount;
   }
   $("st-circles").textContent = String(infos.length);
   $("st-rounds").textContent = String(rounds);
   $("st-volume").textContent = usd(volume);
-  $("st-members").textContent = String(joined);
+  $("st-members").textContent = String(seats);
 }
 
 /** Which of the five steps the circle is on now, or null when it is not running. */
@@ -40,6 +40,7 @@ export function highlightStep(step) {
 }
 
 const PHASES = ["Filling up", "Running", "Complete", "Dissolved", "Did not fill"];
+const AFTER = { 2: "Every member took the pot once", 3: "Refunded pro rata", 4: "Every pledge refunded" };
 
 let timer;
 /** "Round 2 of 3 · Practice · Mei" and a live countdown to the end of bidding. */
@@ -52,7 +53,8 @@ export function renderHeader(info, round) {
       const left = Math.round(info.joinBy - Date.now() / 1000);
       return (el.textContent = left > 0 ? `${info.memberCount} of ${info.size} joined` : "Joining closed");
     }
-    if (info.phase !== 1) return (el.textContent = PHASES[info.phase] ?? "");
+    // The phase is already in the title next to this; say what it meant instead of repeating it.
+    if (info.phase !== 1) return (el.textContent = AFTER[info.phase] ?? "");
     if (!round || round.closed) return (el.textContent = round?.released ? "" : "Release in progress");
     const left = Math.round(round.bidEnd - Date.now() / 1000);
     if (left <= 0) return (el.textContent = "Bidding closed");
@@ -64,15 +66,21 @@ export function renderHeader(info, round) {
   timer = setInterval(tick, 1000);
 }
 
-/** The first full circle's transactions (docs/proof, copied to /data/proof.json by scripts/build-site.sh). */
-export async function proofRuns() {
+async function getJson(path, fallback) {
   try {
-    const res = await fetch("/data/proof.json", { cache: "no-store" });
-    return res.ok ? await res.json() : [];
+    const res = await fetch(path, { cache: "no-store" });
+    return res.ok ? await res.json() : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
+
+/** Full-circle proof runs, oldest first (docs/proof/<circle>.json, copied to /data/proof.json by scripts/build-site.sh). */
+let runsCache;
+export const proofRuns = () => (runsCache ??= getJson("/data/proof.json", []));
+
+/** The safety-path proofs (docs/proof/edge-cases.json, copied to /data/edge-cases.json by scripts/build-site.sh). */
+export const edgeCases = () => getJson("/data/edge-cases.json", null);
 
 const link = (href, text) => {
   const a = document.createElement("a");
@@ -115,20 +123,62 @@ export async function renderProofSteps() {
   const runs = await proofRuns();
   const run = runs[runs.length - 1];
   if (!run) return;
+  $("proof-count").textContent = `${run.steps.filter((x) => x.tx).length} transactions, no gas`;
   $("proof-circle").replaceChildren(link(`${CONFIG.explorer}/address/${run.circle}`, `${run.circle.slice(0, 6)}…${run.circle.slice(-4)} ↗`));
-  ul.replaceChildren(
-    ...run.steps.map((s, i) => {
-      const li = document.createElement("li");
-      const ic = document.createElement("span");
-      ic.className = "ic" + (/released|pay out/i.test(s.step) ? " release" : "");
-      ic.textContent = String(i + 1);
-      const what = document.createElement("span");
-      what.className = "what";
-      what.textContent = s.step;
-      const a = link(s.url, `${s.tx.slice(0, 10)}… ↗`);
-      a.className = "when";
-      li.append(ic, what, a);
-      return li;
+  ul.replaceChildren(...proofItems(run.steps));
+}
+
+/** One numbered line per step: the transaction link, or "check" for a read or a refused request (no transaction). */
+function proofItems(steps) {
+  let n = 0;
+  return steps.map((s) => {
+    const li = document.createElement("li");
+    const ic = document.createElement("span");
+    ic.className = "ic" + (s.tx && /released|pay out|paid back|refund/i.test(s.step) ? " release" : "");
+    ic.textContent = s.tx ? String(++n) : "·";
+    const what = document.createElement("span");
+    what.className = "what";
+    what.textContent = s.step.replace(/his\/her payee/, "own payee");
+    let a;
+    if (s.tx) a = link(s.url, `${s.tx.slice(0, 10)}… ↗`);
+    else {
+      a = document.createElement("span");
+      a.textContent = "check";
+    }
+    a.className = "when";
+    li.append(ic, what, a);
+    return li;
+  });
+}
+
+/** The safety paths: one card per case (A to E), in the same style as the full circle. */
+export async function renderEdgeSteps() {
+  const box = document.getElementById("edge-cases");
+  if (!box) return;
+  const edge = await edgeCases();
+  if (!edge) return;
+  const total = edge.steps.filter((x) => x.tx).length;
+  $("edge-count").textContent = `${total} transactions in all.`;
+  const sections = [...new Set(edge.steps.map((x) => x.section))].sort();
+  box.replaceChildren(
+    ...sections.map((name) => {
+      const steps = edge.steps.filter((x) => x.section === name);
+      const count = steps.filter((x) => x.tx).length;
+      const card = document.createElement("div");
+      card.className = "feed-card";
+      const head = document.createElement("header");
+      head.className = "feed-head";
+      const title = document.createElement("span");
+      title.textContent = name;
+      const right = document.createElement("span");
+      right.className = "feed-timer";
+      right.textContent = count ? `${count} transaction${count === 1 ? "" : "s"}` : "no transaction";
+      head.append(title, right);
+      const ul = document.createElement("ul");
+      ul.className = "feed";
+      ul.append(...proofItems(steps));
+      card.append(head, ul);
+      return card;
     }),
   );
 }
