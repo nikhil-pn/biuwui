@@ -112,7 +112,7 @@ curl -s -X POST https://app.sovereign.exprmnts.fun/api/faucet -H 'content-type: 
 | 503 | `EMPTY` | the faucet holds under 0.03 tUSD8 (QDay's Discord `/faucet` gives 5 tUSD8) |
 | 503 | `NOT_CONFIGURED` | `FAUCET_PRIVATE_KEY` is missing or is a public test key |
 
-The app turns every faucet error into a plain sentence that points to QDay's Discord faucet.
+The app turns every faucet error into a plain sentence that points to QDay's Discord `/faucet` (5 tUSD8), and every relayer code into a sentence a member can act on (`web-src/app/ui.ts`).
 
 ## `GET /api/health`
 

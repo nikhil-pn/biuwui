@@ -127,16 +127,39 @@ export async function isSovereignCircle(c: string): Promise<boolean> {
 
 const json = (v: unknown) => JSON.stringify(v, (_k, x) => (typeof x === "bigint" ? x.toString() : x));
 
+/** An error answered by /api/relay or /api/faucet, with its short code (docs/API.md). */
+export class ApiError extends Error {
+  constructor(message: string, public code: string, public status: number) {
+    super(message);
+  }
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   let r: Response;
   try {
     r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: json(body) });
   } catch {
-    throw new Error("Can't reach the relayer. Check your connection and try again.");
+    throw new ApiError("Can't reach the relayer. Check your connection and try again.", "OFFLINE", 0);
   }
-  const data = (await r.json().catch(() => ({}))) as { error?: string };
-  if (!r.ok) throw new Error(data.error || `The relayer answered ${r.status}.`);
+  const data = (await r.json().catch(() => ({}))) as { error?: string; code?: string };
+  if (!r.ok) throw new ApiError(data.error || `The relayer answered ${r.status}.`, data.code ?? `HTTP_${r.status}`, r.status);
   return data as T;
+}
+
+const DISCORD_FAUCET = "QDay's Discord gives 5 tUSD8 with the /faucet command.";
+
+/** Every starter-faucet failure as one plain sentence that points to QDay's own faucet. */
+function faucetError(e: unknown): Error {
+  const code = e instanceof ApiError ? e.code : "";
+  const why: Record<string, string> = {
+    EMPTY: "Sovereign's starter faucet has run out of test money for now.",
+    ALREADY_SENT: "This wallet already got its free test money from Sovereign.",
+    HAS_FUNDS: "This wallet already has enough test money for a practice circle.",
+    RATE_LIMITED: "Sovereign's starter faucet has sent its limit for your connection today.",
+    NOT_CONFIGURED: "Sovereign's starter faucet isn't available right now.",
+    OFFLINE: "Couldn't reach Sovereign's starter faucet. Check your connection.",
+  };
+  return new ApiError(`${why[code] ?? "Sovereign's starter faucet couldn't send test money just now."} ${DISCORD_FAUCET}`, `FAUCET_${code || "FAILED"}`, 0);
 }
 
 async function receipt(hash: Hex): Promise<TransactionReceipt> {
@@ -147,7 +170,9 @@ async function receipt(hash: Hex): Promise<TransactionReceipt> {
 
 /** Starter money: 0.03 tUSD8, once per wallet. Waits until it lands. */
 export async function faucet(a: Address): Promise<Hex> {
-  const { hash } = await post<{ hash: Hex }>("/api/faucet", { address: a });
+  const { hash } = await post<{ hash: Hex }>("/api/faucet", { address: a }).catch((e) => {
+    throw faucetError(e);
+  });
   await receipt(hash);
   return hash;
 }

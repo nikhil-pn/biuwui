@@ -113,8 +113,36 @@ export function progressIn(el: HTMLElement): Progress {
   };
 }
 
+const NOTHING_SENT = "Nothing was sent and your money hasn't moved.";
+/** Relayer and faucet answers carry a short code (docs/API.md); each becomes a sentence a member can act on. */
+const RELAY_CODES: Record<string, string | null> = {
+  WOULD_REVERT: null, // the relayer already explains the contract's reason in plain words
+  RATE_LIMITED: null, // says how many minutes to wait
+  OFFLINE: null,
+  WINDOW_TOO_LONG: "That signature stayed valid for too long, so the relayer refused it. Please sign again.",
+  LOW_GAS: `The relayer is out of test gas right now. ${NOTHING_SENT} Please try again later.`,
+  DAILY_CAP: `The relayer has used today's gas budget. ${NOTHING_SENT} Please try again tomorrow.`,
+  NOT_CONFIGURED: `The relayer isn't available right now. ${NOTHING_SENT}`,
+  NOT_ALLOWED: `The relayer only sends Sovereign actions to Sovereign circles, so it refused this one. ${NOTHING_SENT}`,
+  BAD_ARGS: "The app sent a request the relayer couldn't read. Reload the page and try again.",
+  BAD_JSON: "The app sent a request the relayer couldn't read. Reload the page and try again.",
+  BAD_ADDRESS: "One of the addresses in this request isn't valid. Check it and try again.",
+  METHOD: "The app sent a request the relayer couldn't read. Reload the page and try again.",
+  INTERNAL: `The relayer had a problem on its side. ${NOTHING_SENT} Please try again.`,
+};
+function relayerSentence(e: unknown): string | null {
+  const code = (e as { code?: unknown })?.code;
+  if (!(e instanceof Error) || typeof code !== "string") return null;
+  if (code.startsWith("FAUCET_")) return e.message; // already points to QDay's Discord faucet
+  if (code in RELAY_CODES) return RELAY_CODES[code] ?? e.message;
+  if (code.startsWith("HTTP_5")) return RELAY_CODES.INTERNAL;
+  return e.message;
+}
+
 /** Turn wallet, relayer and contract errors into one plain sentence. */
 export function friendly(e: unknown): string {
+  const relay = relayerSentence(e);
+  if (relay) return relay;
   const err = e as { code?: number; shortMessage?: string; details?: string; message?: string };
   const m = `${err?.shortMessage ?? ""} ${err?.details ?? ""} ${err instanceof Error ? err.message : String(e)}`;
   if (err?.code === 4001 || /user rejected|user denied|rejected the request|cancelled/i.test(m)) return "You cancelled the signature. Nothing was sent.";
